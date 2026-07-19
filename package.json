@@ -5,7 +5,6 @@
   "type": "module",
   "description": "AI Context Engine — persistent local-first context store any chat can save into and any other can load from.",
   "license": "Apache-2.0",
-  "packageManager": "pnpm@11.1.1",
   "engines": {
     "node": ">=20"
   },
@@ -24,7 +23,7 @@
     "demo:m11": "tsx demos/M11.ts",
     "serve": "pnpm --filter=@ace/server build && node apps/server/dist/main.js",
     "enable:semantic": "pnpm add -w @huggingface/transformers",
-    "setup:global": "pnpm -r build && npm link ./packages/mcp && npm link ./packages/cli"
+    "setup:global": "pnpm -r build && pnpm --filter @ace/mcp link --global && pnpm --filter @ace/cli link --global"
   },
   "dependencies": {
     "@ace/cache": "workspace:*",

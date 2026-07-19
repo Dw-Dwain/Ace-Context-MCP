@@ -112,8 +112,13 @@ describe('installMcp (claude-desktop)', () => {
       const written = JSON.parse(await readFile(configPath, 'utf8')) as {
         mcpServers: { ace: { command: string; args: string[] } };
       };
-      expect(written.mcpServers.ace.command).toBe('ace-mcp');
-      expect(written.mcpServers.ace.args).toEqual([]);
+      if (process.platform === 'win32') {
+        expect(written.mcpServers.ace.command).toBe('cmd');
+        expect(written.mcpServers.ace.args).toEqual(['/c', 'ace-mcp']);
+      } else {
+        expect(written.mcpServers.ace.command).toBe('ace-mcp');
+        expect(written.mcpServers.ace.args).toEqual([]);
+      }
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

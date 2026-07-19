@@ -30,4 +30,18 @@ describe('Cache with a custom (LLM-style) intent classifier', () => {
     expect(miss.scores?.intent).toBe(0);
     expect(calls.length).toBeGreaterThan(0);
   });
+
+  it('never throws when the classifier rejects — falls back to the heuristic', async () => {
+    const cache = new Cache({
+      threshold: 0.7,
+      semanticFloor: 0,
+      intentClassifier: () => Promise.reject(new Error('classifier down')),
+    });
+    await expect(
+      cache.store(q('explain how tokens rotate'), { content: 'x', model: 'm', provider: 'mock' }),
+    ).resolves.toBeUndefined();
+    const d = await cache.decide(q('explain how the tokens rotate please'));
+    expect(d).toBeDefined();
+    expect(d.scores).toBeDefined();
+  });
 });

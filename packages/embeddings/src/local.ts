@@ -25,10 +25,15 @@ export class LocalEmbeddings implements EmbeddingProvider {
     this.id = `local:${this.model}`;
   }
 
+  /** Cheap check that the optional dep is installed — does NOT load or
+   *  download the model. The (potentially multi-minute) first-run download is
+   *  deferred to the first embed() call, so startup selection stays fast. */
   async available(): Promise<boolean> {
     if (this.failed) return false;
+    if (this.pipe) return true;
     try {
-      await this.load();
+      const pkg = '@huggingface/transformers';
+      await import(pkg);
       return true;
     } catch {
       this.failed = true;

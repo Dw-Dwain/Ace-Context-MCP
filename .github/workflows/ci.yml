@@ -22,8 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # pnpm 10 supports Node 18+ (pnpm 11 requires Node >=22.13 via node:sqlite,
+      # which would break the Node 20 matrix leg).
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Setup Node ${{ matrix.node }}
         uses: actions/setup-node@v4
@@ -34,9 +38,9 @@ jobs:
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
-        run: pnpm -r typecheck
-
+      # Build first: it emits each package's dist/*.d.ts and typechecks src via
+      # tsc, so it doubles as the type gate. Dependent packages can only resolve
+      # @ace/* types once their deps are built.
       - name: Build
         run: pnpm -r build
 

@@ -192,12 +192,15 @@ export class Store {
       if (want.has('snippets') && ex.snippets.length) {
         const names: string[] = [];
         for (const s of ex.snippets) {
-          await atomicWrite(join(snippetsDir(this.cfg, req.slug), s.name), s.content);
-          names.push(s.name);
+          // Trust boundary: never let an extractor-supplied name escape the
+          // snippets dir. Reduce to a basename with a safe charset.
+          const safeName = basename(s.name).replace(/[^a-zA-Z0-9._-]/g, '_') || 'snippet';
+          await atomicWrite(join(snippetsDir(this.cfg, req.slug), safeName), s.content);
+          names.push(safeName);
           workingTokens += estimateTokens(s.content);
-          chunkSources.push({ section: `snippet:${s.name}`, text: s.content });
+          chunkSources.push({ section: `snippet:${safeName}`, text: s.content });
         }
-        manifest.sections.snippets = names;
+        manifest.sections.snippets = uniq(names);
       }
 
       if (text && req.hints?.keepRaw !== false) {

@@ -103,8 +103,22 @@ export async function installMcp(opts: InstallOptions): Promise<InstallResult> {
   const useGlobal = opts.forceGlobal ?? (opts.overrideMcpBin ? false : aceMcpOnPath());
   const mode: 'global' | 'local' = useGlobal ? 'global' : 'local';
   const binPath = useGlobal ? 'ace-mcp' : (opts.overrideMcpBin ?? resolveAceMcpBin());
-  const command = useGlobal ? 'ace-mcp' : process.execPath;
-  const args = useGlobal ? [] : [binPath];
+  let command: string;
+  let args: string[];
+  if (useGlobal) {
+    // On Windows the PATH bin is `ace-mcp.cmd`; MCP clients that spawn without
+    // a shell can't launch it directly, so wrap it in `cmd /c`.
+    if (platform() === 'win32') {
+      command = 'cmd';
+      args = ['/c', 'ace-mcp'];
+    } else {
+      command = 'ace-mcp';
+      args = [];
+    }
+  } else {
+    command = process.execPath;
+    args = [binPath];
+  }
 
   let cfg: Record<string, unknown> = {};
   let hadFile = false;

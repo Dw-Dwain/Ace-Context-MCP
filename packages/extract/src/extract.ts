@@ -120,7 +120,7 @@ function dedup(xs: string[]): string[] {
   return out;
 }
 
-function extForLang(lang: string): string {
+export function extForLang(lang: string): string {
   const map: Record<string, string> = {
     typescript: 'ts',
     ts: 'ts',

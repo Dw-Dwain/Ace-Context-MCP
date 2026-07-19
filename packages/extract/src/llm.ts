@@ -1,4 +1,4 @@
-import { extract, type ExtractInput, type ExtractResult, type Snippet } from './extract.js';
+import { extract, extForLang, type ExtractInput, type ExtractResult, type Snippet } from './extract.js';
 
 /** Minimal LLM interface — structurally satisfied by router's asLlmClient().
  *  Kept here so @ace/extract stays free of any provider dependency. */
@@ -79,8 +79,10 @@ function snippets(v: unknown): Snippet[] {
     const o = s as Record<string, unknown>;
     const content = typeof o.content === 'string' ? o.content : '';
     if (!content.trim()) continue;
-    const lang = typeof o.lang === 'string' && o.lang ? o.lang.toLowerCase() : 'txt';
-    out.push({ name: `${String(i).padStart(3, '0')}-snippet.${lang}`, lang, content });
+    const rawLang = typeof o.lang === 'string' && o.lang ? o.lang.toLowerCase() : 'txt';
+    // Constrain LLM-supplied lang through the allow-list — never into a path.
+    const ext = extForLang(rawLang);
+    out.push({ name: `${String(i).padStart(3, '0')}-snippet.${ext}`, lang: ext, content });
     i++;
   }
   return out;

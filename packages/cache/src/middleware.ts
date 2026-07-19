@@ -13,8 +13,11 @@ export function cacheMiddleware(cache: Cache): Middleware {
     name: 'cache',
     appliesTo: ['chat'],
     before: async (ctx) => {
-      const messages = resolveMessages(ctx);
       const input = ctx.op.input as ChatRequest;
+      // Streaming callers expect an async iterable, not a buffered hit. Don't
+      // serve (or, via the after guard, store) the cache for streaming requests.
+      if (input.stream) return;
+      const messages = resolveMessages(ctx);
       const decision = await cache.decide({ model: input.model ?? 'auto', messages });
       recordDecision(ctx, 'cache', {
         hit: decision.hit,

@@ -71,7 +71,7 @@ export class Cache {
     }
 
     const queryText = this.queryText(query);
-    const intent = await this.classify(queryText);
+    const intent = await this.safeClassify(queryText);
     const contextFp = this.contextFingerprint(query);
     const [vec] = await this.embedder.embed([queryText]);
 
@@ -103,7 +103,7 @@ export class Cache {
     const [vec] = await this.embedder.embed([queryText]);
     const entry: CacheEntry = {
       key: this.exactKey(query),
-      intent: await this.classify(queryText),
+      intent: await this.safeClassify(queryText),
       contextFp: this.contextFingerprint(query),
       provider: this.embedder.id,
       vector: vec ? Array.from(vec) : null,
@@ -120,6 +120,16 @@ export class Cache {
 
   clear(): void {
     this.backend.clear();
+  }
+
+  // A custom (e.g. LLM-backed) classifier may reject or hang; never let that
+  // take down a cache lookup — fall back to the heuristic.
+  private async safeClassify(text: string): Promise<Intent> {
+    try {
+      return await this.classify(text);
+    } catch {
+      return classifyIntent(text);
+    }
   }
 
   private score(semantic: number, intent: Intent, contextFp: string, entry: CacheEntry): CacheScores {

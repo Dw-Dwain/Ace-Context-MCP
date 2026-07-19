@@ -111,4 +111,15 @@ describe('cache middleware in the chat pipeline', () => {
     const cacheEntry = second.trace.find((t) => t.stage === 'cache' && t.decision);
     expect(cacheEntry?.decision).toMatchObject({ hit: true, reason: 'exact' });
   });
+
+  it('does not serve or store the cache for streaming requests', async () => {
+    const { eng, calls } = engine();
+    const streamAsk = { ...q('stream me'), stream: true } as const;
+    const drain = async (resp: unknown) => {
+      for await (const _ of resp as AsyncIterable<unknown>) void _;
+    };
+    await drain((await eng.chat(streamAsk)).response);
+    await drain((await eng.chat(streamAsk)).response); // identical — must NOT be cache-served
+    expect(calls()).toBe(2); // provider called both times, no cache short-circuit
+  });
 });
