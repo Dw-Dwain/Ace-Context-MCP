@@ -1,0 +1,28 @@
+{
+  "name": "ace",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "AI Context Engine — persistent local-first context store any chat can save into and any other can load from.",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@11.1.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter=./packages/* build",
+    "test": "pnpm -r --filter=./packages/* test",
+    "typecheck": "pnpm -r --filter=./packages/* typecheck",
+    "demo:m1": "tsx demos/M1.ts"
+  },
+  "dependencies": {
+    "@ace/core": "workspace:*",
+    "@ace/store": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.5"
+  }
+}
