@@ -2,17 +2,34 @@
 
 Persistent, local-first context store. Save context in one chat, load it in another. Works from any tool that can shell out to a CLI, hit a REST endpoint, or talk MCP.
 
-**Status: M1 shipped.** Save/load/list/forget on disk with a SQLite metadata index. Semantic search, MCP server, extractors, and the LLM proxy pipeline land in later milestones — see the [architecture plan](../../../.claude/plans/ai-context-engine-semantic-parsed-bee.md).
+**Status: M1 + M4 shipped.** Save/load/list/forget on disk with a SQLite metadata index (M1). MCP server so any chat client can call the store, plus `ace mcp install` for one-command wire-up (M4). Semantic search (M2), extractors (M3), and the LLM proxy pipeline land in later milestones — see the [architecture plan](../../../.claude/plans/ai-context-engine-semantic-parsed-bee.md).
 
-## Try it now (M1)
+## Try it now
 
 ```bash
 pnpm install
 pnpm -r build
 
-# Run the end-to-end demo (uses a scratch ACE_HOME, cleans itself up)
-pnpm demo:m1
+# End-to-end demos (each uses a scratch ACE_HOME, cleans itself up)
+pnpm demo:m1   # save/load/list/forget via the SDK
+pnpm demo:m4   # spawn ace-mcp over stdio and drive it as an MCP client
 ```
+
+## Wire it into your chat client (M4)
+
+```bash
+# One-command install into Claude Desktop's config
+node packages/cli/bin/ace.js mcp install --client=claude-desktop
+# Restart Claude Desktop. context_save / context_load / context_list / context_forget
+# now appear as tools any conversation can call.
+```
+
+Config paths written:
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+The command is idempotent, preserves any existing `mcpServers` entries, and backs up the previous file before writing.
 
 ## CLI
 
@@ -60,7 +77,8 @@ Every operation returns a `trace` — an array of decisions each middleware made
 
 - `packages/core`  — engine + middleware kernel + types + tracing
 - `packages/store` — on-disk context store (SQLite index, markdown content)
-- `packages/cli`   — the `ace` binary
+- `packages/mcp`   — MCP server (`ace-mcp`) exposing the store as MCP tools
+- `packages/cli`   — the `ace` binary (save/load/list/forget/mcp install)
 - `demos/`         — per-milestone runnable demos
 
 ## On-disk shape

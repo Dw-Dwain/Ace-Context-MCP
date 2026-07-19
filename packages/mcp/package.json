@@ -1,11 +1,17 @@
 {
-  "name": "@ace/cli",
+  "name": "@ace/mcp",
   "version": "0.0.1",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "bin": {
-    "ace": "./bin/ace.js"
+    "ace-mcp": "./bin/ace-mcp.js"
   },
   "files": ["dist", "bin"],
   "scripts": {
@@ -15,10 +21,9 @@
   },
   "dependencies": {
     "@ace/core": "workspace:*",
-    "@ace/mcp": "workspace:*",
     "@ace/store": "workspace:*",
-    "commander": "^12.1.0",
-    "clipboardy": "^4.0.0"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

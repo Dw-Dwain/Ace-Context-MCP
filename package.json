@@ -13,11 +13,14 @@
     "build": "pnpm -r --filter=./packages/* build",
     "test": "pnpm -r --filter=./packages/* test",
     "typecheck": "pnpm -r --filter=./packages/* typecheck",
-    "demo:m1": "tsx demos/M1.ts"
+    "demo:m1": "tsx demos/M1.ts",
+    "demo:m4": "pnpm -r build && tsx demos/M4.ts"
   },
   "dependencies": {
     "@ace/core": "workspace:*",
-    "@ace/store": "workspace:*"
+    "@ace/mcp": "workspace:*",
+    "@ace/store": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

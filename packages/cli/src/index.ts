@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { Store } from '@ace/store';
 import { collectInput } from './input.js';
+import { installMcp } from './mcp-install.js';
 
 const program = new Command()
   .name('ace')
@@ -85,6 +86,34 @@ program
       }
     } finally {
       store.close();
+    }
+  });
+
+const mcp = program.command('mcp').description('MCP server integration');
+
+mcp
+  .command('install')
+  .description('register the ace MCP server with a chat client')
+  .requiredOption('--client <name>', 'client to install into (currently: claude-desktop)')
+  .option('--ace-home <path>', 'ACE_HOME to bake into the client config (default: env or ~/.ace/store)')
+  .option('--config-path <path>', 'override the client config path (for tests)')
+  .option('--no-backup', 'skip backing up an existing config file')
+  .action(async (opts) => {
+    const installArgs: Parameters<typeof installMcp>[0] = { client: opts.client };
+    if (opts.aceHome) installArgs.aceHome = opts.aceHome;
+    else if (process.env.ACE_HOME) installArgs.aceHome = process.env.ACE_HOME;
+    if (opts.configPath) installArgs.overrideConfigPath = opts.configPath;
+    if (opts.backup === false) installArgs.backup = false;
+    const res = await installMcp(installArgs);
+    process.stdout.write(
+      `ace-mcp registered in ${opts.client}\n` +
+        `  action:      ${res.action}\n` +
+        `  config file: ${res.configPath}\n` +
+        `  server bin:  ${res.binPath}\n` +
+        (res.backupPath ? `  backup:      ${res.backupPath}\n` : ''),
+    );
+    if (res.action !== 'noop') {
+      process.stdout.write('Restart the client for the changes to take effect.\n');
     }
   });
 
