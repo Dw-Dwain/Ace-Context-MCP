@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { installMcp } from '../src/mcp-install.js';
+import { installMcp, configPathFor, CLIENTS } from '../src/mcp-install.js';
 
 async function scratch(): Promise<{ dir: string; configPath: string; binPath: string }> {
   const dir = await mkdtemp(join(tmpdir(), 'ace-mcp-install-'));
@@ -103,5 +103,31 @@ describe('installMcp (claude-desktop)', () => {
     await expect(
       installMcp({ client: 'not-a-real-client' as unknown as 'claude-desktop', overrideConfigPath: '/tmp/x' }),
     ).rejects.toThrow(/unsupported client/);
+  });
+
+  it('resolves a distinct, plausible config path for every client', () => {
+    const paths = CLIENTS.map((c) => configPathFor(c));
+    for (const p of paths) expect(p.length).toBeGreaterThan(0);
+    expect(new Set(paths).size).toBe(CLIENTS.length);
+    expect(configPathFor('claude-desktop')).toMatch(/claude_desktop_config\.json$/);
+    expect(configPathFor('cursor')).toMatch(/[/\\]\.cursor[/\\]mcp\.json$/);
+    expect(configPathFor('claude-code')).toMatch(/\.claude\.json$/);
+    expect(configPathFor('cline')).toMatch(/cline_mcp_settings\.json$/);
+  });
+
+  it('installs for cursor, cline, and claude-code (via override path)', async () => {
+    for (const client of ['cursor', 'cline', 'claude-code'] as const) {
+      const { dir, configPath, binPath } = await scratch();
+      try {
+        const res = await installMcp({ client, overrideConfigPath: configPath, overrideMcpBin: binPath });
+        expect(res.action).toBe('installed');
+        const written = JSON.parse(await readFile(configPath, 'utf8')) as {
+          mcpServers: { ace: { args: string[] } };
+        };
+        expect(written.mcpServers.ace.args[0]).toBe(binPath);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    }
   });
 });

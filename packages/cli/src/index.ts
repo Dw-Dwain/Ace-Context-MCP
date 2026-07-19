@@ -132,7 +132,7 @@ const mcp = program.command('mcp').description('MCP server integration');
 mcp
   .command('install')
   .description('register the ace MCP server with a chat client')
-  .requiredOption('--client <name>', 'client to install into (currently: claude-desktop)')
+  .requiredOption('--client <name>', 'claude-desktop | cursor | cline | claude-code')
   .option('--ace-home <path>', 'ACE_HOME to bake into the client config (default: env or ~/.ace/store)')
   .option('--config-path <path>', 'override the client config path (for tests)')
   .option('--no-backup', 'skip backing up an existing config file')

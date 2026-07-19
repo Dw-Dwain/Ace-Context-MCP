@@ -4,7 +4,8 @@ import { dirname, join, resolve } from 'node:path';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync, copyFileSync } from 'node:fs';
 
-export type Client = 'claude-desktop';
+export const CLIENTS = ['claude-desktop', 'cursor', 'cline', 'claude-code'] as const;
+export type Client = (typeof CLIENTS)[number];
 
 export interface InstallOptions {
   client: Client;
@@ -21,16 +22,51 @@ export interface InstallResult {
   backupPath: string | null;
 }
 
-export function claudeDesktopConfigPath(): string {
+/** VS Code's per-user config root, shared by the Cline extension's storage. */
+function vscodeUserDir(): string {
   const home = homedir();
   switch (platform()) {
     case 'win32':
-      return join(process.env.APPDATA ?? join(home, 'AppData', 'Roaming'), 'Claude', 'claude_desktop_config.json');
+      return join(process.env.APPDATA ?? join(home, 'AppData', 'Roaming'), 'Code', 'User');
     case 'darwin':
-      return join(home, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
+      return join(home, 'Library', 'Application Support', 'Code', 'User');
     default:
-      return join(process.env.XDG_CONFIG_HOME ?? join(home, '.config'), 'Claude', 'claude_desktop_config.json');
+      return join(process.env.XDG_CONFIG_HOME ?? join(home, '.config'), 'Code', 'User');
   }
+}
+
+/** All four clients read the same `{ mcpServers: { name: {command,args,env} } }`
+ *  shape; only the file location differs. */
+export function configPathFor(client: Client): string {
+  const home = homedir();
+  switch (client) {
+    case 'claude-desktop':
+      switch (platform()) {
+        case 'win32':
+          return join(process.env.APPDATA ?? join(home, 'AppData', 'Roaming'), 'Claude', 'claude_desktop_config.json');
+        case 'darwin':
+          return join(home, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
+        default:
+          return join(process.env.XDG_CONFIG_HOME ?? join(home, '.config'), 'Claude', 'claude_desktop_config.json');
+      }
+    case 'cursor':
+      return join(home, '.cursor', 'mcp.json');
+    case 'claude-code':
+      return join(home, '.claude.json');
+    case 'cline':
+      return join(
+        vscodeUserDir(),
+        'globalStorage',
+        'saoudrizwan.claude-dev',
+        'settings',
+        'cline_mcp_settings.json',
+      );
+  }
+}
+
+/** @deprecated use configPathFor('claude-desktop') */
+export function claudeDesktopConfigPath(): string {
+  return configPathFor('claude-desktop');
 }
 
 export function resolveAceMcpBin(): string {
@@ -43,10 +79,10 @@ export function resolveAceMcpBin(): string {
 }
 
 export async function installMcp(opts: InstallOptions): Promise<InstallResult> {
-  if (opts.client !== 'claude-desktop') {
-    throw new Error(`unsupported client: ${opts.client}`);
+  if (!CLIENTS.includes(opts.client)) {
+    throw new Error(`unsupported client: ${opts.client}. Supported: ${CLIENTS.join(', ')}`);
   }
-  const configPath = opts.overrideConfigPath ?? claudeDesktopConfigPath();
+  const configPath = opts.overrideConfigPath ?? configPathFor(opts.client);
   const binPath = opts.overrideMcpBin ?? resolveAceMcpBin();
 
   let cfg: Record<string, unknown> = {};

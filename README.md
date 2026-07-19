@@ -18,18 +18,22 @@ pnpm demo:m4   # spawn ace-mcp over stdio and drive it as an MCP client
 ## Wire it into your chat client (M4)
 
 ```bash
-# One-command install into Claude Desktop's config
+# One-command install — pick your client
 node packages/cli/bin/ace.js mcp install --client=claude-desktop
-# Restart Claude Desktop. context_save / context_load / context_list / context_forget
-# now appear as tools any conversation can call.
+node packages/cli/bin/ace.js mcp install --client=cursor
+node packages/cli/bin/ace.js mcp install --client=cline
+node packages/cli/bin/ace.js mcp install --client=claude-code
 ```
 
-Config paths written:
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
+Restart the client and `context_save` / `context_load` / `context_search` / `context_list` / `context_forget` appear as tools any conversation can call.
 
-The command is idempotent, preserves any existing `mcpServers` entries, and backs up the previous file before writing.
+Config files written (one `mcpServers.ace` entry each):
+- **claude-desktop** — `%APPDATA%\Claude\claude_desktop_config.json` (Win) / `~/Library/Application Support/Claude/…` (macOS) / `~/.config/Claude/…` (Linux)
+- **cursor** — `~/.cursor/mcp.json`
+- **claude-code** — `~/.claude.json`
+- **cline** — VS Code `globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+
+The command is idempotent, preserves existing `mcpServers` entries, and backs up the previous file before writing.
 
 ## CLI
 
