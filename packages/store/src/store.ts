@@ -112,12 +112,34 @@ export class Store {
     return this.embedder;
   }
 
+  // Per-slug write serialization. Concurrent save/forget on the same slug would
+  // otherwise race on directory create/rename (crashes on Windows). Chains each
+  // op after the prior one for that slug, regardless of the prior's outcome.
+  // ponytail: in-process only; a cross-process file lock is a post-v1 concern.
+  private locks = new Map<string, Promise<unknown>>();
+  private withSlugLock<T>(slug: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.locks.get(slug) ?? Promise.resolve();
+    const run = prev.then(fn, fn);
+    this.locks.set(
+      slug,
+      run.then(
+        () => undefined,
+        () => undefined,
+      ),
+    );
+    return run;
+  }
+
   close(): void {
     this.index?.close();
     this.index = null;
   }
 
-  async save(req: SaveRequest): Promise<SaveResult> {
+  save(req: SaveRequest): Promise<SaveResult> {
+    return this.withSlugLock(req.slug, () => this.saveImpl(req));
+  }
+
+  private async saveImpl(req: SaveRequest): Promise<SaveResult> {
     const existing = await readManifest(this.cfg, req.slug);
     const manifest = existing ?? newManifest(req.slug, inferSourceKind(req));
     if (existing) manifest.version += 1;
@@ -363,7 +385,11 @@ export class Store {
     return { contexts };
   }
 
-  async forget(req: ForgetRequest): Promise<ForgetResult> {
+  forget(req: ForgetRequest): Promise<ForgetResult> {
+    return this.withSlugLock(req.slug, () => this.forgetImpl(req));
+  }
+
+  private async forgetImpl(req: ForgetRequest): Promise<ForgetResult> {
     const dir = contextDir(this.cfg, req.slug);
     const exists = await stat(dir).catch(() => null);
     if (!exists) return { slug: req.slug, moved: null };
