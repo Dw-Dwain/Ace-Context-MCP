@@ -9,7 +9,7 @@ import type {
   Shape,
 } from '@ace/core';
 import { HashEmbeddings, cosine, type EmbeddingProvider } from '@ace/embeddings';
-import { extract } from '@ace/extract';
+import { extract, type ExtractInput, type ExtractResult } from '@ace/extract';
 import { atomicWrite } from './atomic.js';
 import { chunkText, type Chunk } from './chunk.js';
 import { resolveConfig, type StoreConfig } from './config.js';
@@ -37,6 +37,10 @@ export interface StoreOptions {
   /** Embedding provider for semantic search. Default: deterministic hash
    *  embeddings (offline, hermetic). Pass `false` to skip indexing on save. */
   embeddings?: EmbeddingProvider | false;
+  /** Extractor for distilling threads into decisions/facts/snippets. Default:
+   *  the heuristic extractor. Pass an LLM-backed one (e.g. LlmExtractor) for
+   *  higher-quality extraction. */
+  extractor?: (input: ExtractInput) => ExtractResult | Promise<ExtractResult>;
 }
 
 export interface SearchRequestFull {
@@ -89,11 +93,13 @@ export class Store {
   private index: MetaIndex | null = null;
   private embedder: EmbeddingProvider | null;
   private readonly indexingEnabled: boolean;
+  private readonly extractor: (input: ExtractInput) => ExtractResult | Promise<ExtractResult>;
 
   constructor(opts: StoreOptions = {}) {
     this.cfg = opts.home !== undefined ? resolveConfig(opts.home) : resolveConfig();
     this.indexingEnabled = opts.embeddings !== false;
     this.embedder = opts.embeddings || null;
+    this.extractor = opts.extractor ?? extract;
   }
 
   private getIndex(): MetaIndex {
@@ -131,7 +137,7 @@ export class Store {
       const source: { text?: string; thread?: unknown } = {};
       if (text) source.text = text;
       if (req.source.thread !== undefined) source.thread = req.source.thread;
-      const ex = extract(source);
+      const ex = await this.extractor(source);
 
       const summary = ex.summary || firstLines(text, 40);
       await atomicWrite(summaryPath(this.cfg, req.slug), summary);

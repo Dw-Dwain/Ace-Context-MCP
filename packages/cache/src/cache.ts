@@ -26,6 +26,9 @@ export interface CacheOptions {
   threshold?: number;
   /** Minimum cosine to even consider a candidate. Default 0.6. */
   semanticFloor?: number;
+  /** Override intent classification (e.g. an LLM-backed classifier). Default:
+   *  the heuristic classifyIntent. May be sync or async. */
+  intentClassifier?: (text: string) => Intent | Promise<Intent>;
 }
 
 const DEFAULT_WEIGHTS: CacheWeights = { semantic: 0.4, intent: 0.3, context: 0.2, safety: 0.1 };
@@ -42,6 +45,7 @@ export class Cache {
   private weights: CacheWeights;
   private threshold: number;
   private semanticFloor: number;
+  private classify: (text: string) => Intent | Promise<Intent>;
 
   constructor(opts: CacheOptions = {}) {
     this.embedder = opts.embedder ?? new HashEmbeddings();
@@ -49,6 +53,7 @@ export class Cache {
     this.weights = opts.weights ?? DEFAULT_WEIGHTS;
     this.threshold = opts.threshold ?? 0.85;
     this.semanticFloor = opts.semanticFloor ?? 0.6;
+    this.classify = opts.intentClassifier ?? classifyIntent;
   }
 
   async decide(query: CacheQuery): Promise<CacheDecision> {
@@ -66,7 +71,7 @@ export class Cache {
     }
 
     const queryText = this.queryText(query);
-    const intent = classifyIntent(queryText);
+    const intent = await this.classify(queryText);
     const contextFp = this.contextFingerprint(query);
     const [vec] = await this.embedder.embed([queryText]);
 
@@ -98,7 +103,7 @@ export class Cache {
     const [vec] = await this.embedder.embed([queryText]);
     const entry: CacheEntry = {
       key: this.exactKey(query),
-      intent: classifyIntent(queryText),
+      intent: await this.classify(queryText),
       contextFp: this.contextFingerprint(query),
       provider: this.embedder.id,
       vector: vec ? Array.from(vec) : null,

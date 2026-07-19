@@ -1,5 +1,6 @@
 export { Router } from './router.js';
 export type { RouteRule, RouterOptions } from './router.js';
+export { asLlmClient } from './llm-adapter.js';
 export { MockProvider } from './providers/mock.js';
 export type { MockOptions } from './providers/mock.js';
 export { AnthropicProvider } from './providers/anthropic.js';
