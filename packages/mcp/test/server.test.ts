@@ -99,15 +99,27 @@ describe('ace MCP server', () => {
     }
   });
 
-  it('search returns not-implemented stub', async () => {
+  it('search ranks the relevant context first', async () => {
     const { client, cleanup } = await connected();
     try {
+      await client.callTool({
+        name: 'context_save',
+        arguments: {
+          slug: 'search/auth',
+          text: 'we decided session tokens expire after 15 minutes and rotate on use',
+        },
+      });
+      await client.callTool({
+        name: 'context_save',
+        arguments: { slug: 'search/lunch', text: 'good ramen near the office, cash only' },
+      });
       const res = await client.callTool({
         name: 'context_search',
-        arguments: { query: 'anything' },
+        arguments: { query: 'what did we decide about session tokens', topK: 3 },
       });
       const text = (res.content as Array<{ text: string }>)[0]!.text;
-      expect(text).toMatch(/not implemented/);
+      const firstLine = text.split('\n')[0]!;
+      expect(firstLine).toContain('search/auth');
     } finally {
       await cleanup();
     }

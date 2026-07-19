@@ -1,8 +1,15 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { Store } from '@ace/store';
+import { autoEmbeddings } from '@ace/embeddings';
 import { createAceServer } from './server.js';
 
-const store = process.env.ACE_HOME ? new Store({ home: process.env.ACE_HOME }) : new Store();
+// Log provider selection to stderr — stdout is the MCP transport, keep it clean.
+const embeddings = await autoEmbeddings({
+  onSelect: (id) => process.stderr.write(`ace-mcp embeddings: ${id}\n`),
+});
+const store = process.env.ACE_HOME
+  ? new Store({ home: process.env.ACE_HOME, embeddings })
+  : new Store({ embeddings });
 const server = createAceServer({ store });
 const transport = new StdioServerTransport();
 

@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@ace/core": "workspace:*",
+    "@ace/embeddings": "workspace:*",
     "better-sqlite3": "^12.11.1"
   },
   "devDependencies": {

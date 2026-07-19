@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { Store } from '@ace/store';
+import { autoEmbeddings } from '@ace/embeddings';
 import { collectInput } from './input.js';
 import { installMcp } from './mcp-install.js';
 
@@ -18,7 +19,7 @@ program
   .option('--ttl-days <n>', 'time-to-live in days', (v) => Number(v))
   .option('--no-raw', 'do not keep raw source')
   .action(async (slug: string, opts) => {
-    const store = openStore();
+    const store = await openStoreAuto();
     try {
       const text = await collectInput({
         file: opts.file,
@@ -89,6 +90,39 @@ program
     }
   });
 
+program
+  .command('search <query>')
+  .description('semantic search across saved contexts')
+  .option('-s, --scope <prefix>', 'restrict to a slug prefix, e.g. project/')
+  .option('-k, --top-k <n>', 'max hits', (v) => Number(v), 5)
+  .option('-b, --budget <n>', 'token budget for returned snippets', (v) => Number(v))
+  .action(async (query: string, opts) => {
+    const store = await openStoreAuto();
+    try {
+      const req: { query: string; scope?: string; topK?: number; budgetTokens?: number } = {
+        query,
+        topK: opts.topK,
+      };
+      if (opts.scope) req.scope = opts.scope;
+      if (opts.budget !== undefined) req.budgetTokens = opts.budget;
+      const res = await store.search(req);
+      if (!res.hits.length) {
+        process.stdout.write('(no matches)\n');
+      } else {
+        for (const h of res.hits) {
+          process.stdout.write(`${h.score.toFixed(3)}  ${h.slug}#${h.section}\n    ${h.snippet}\n`);
+        }
+      }
+      if (res.skipped > 0) {
+        process.stderr.write(
+          `(${res.skipped} chunks skipped: embedded by a different provider than ${res.provider}; run a re-save to reindex)\n`,
+        );
+      }
+    } finally {
+      store.close();
+    }
+  });
+
 const mcp = program.command('mcp').description('MCP server integration');
 
 mcp
@@ -135,6 +169,15 @@ program
 
 function openStore(): Store {
   return process.env.ACE_HOME ? new Store({ home: process.env.ACE_HOME }) : new Store();
+}
+
+// save + search embed, so both go through the same provider selection: prefer
+// a running Ollama for real semantics, else deterministic hash embeddings.
+async function openStoreAuto(): Promise<Store> {
+  const embeddings = await autoEmbeddings({
+    onSelect: (id) => process.stderr.write(`embeddings: ${id}\n`),
+  });
+  return new Store(process.env.ACE_HOME ? { home: process.env.ACE_HOME, embeddings } : { embeddings });
 }
 
 function collect(value: string, previous: string[]): string[] {

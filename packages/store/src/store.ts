@@ -8,9 +8,11 @@ import type {
   SaveRequest,
   Shape,
 } from '@ace/core';
+import { HashEmbeddings, cosine, type EmbeddingProvider } from '@ace/embeddings';
 import { atomicWrite } from './atomic.js';
+import { chunkText, type Chunk } from './chunk.js';
 import { resolveConfig, type StoreConfig } from './config.js';
-import { MetaIndex, type IndexRow } from './index-sqlite.js';
+import { MetaIndex, type ChunkInsert, type IndexRow } from './index-sqlite.js';
 import {
   contextDir,
   decisionsPath,
@@ -31,6 +33,30 @@ import { estimateTokens } from './tokens.js';
 
 export interface StoreOptions {
   home?: string;
+  /** Embedding provider for semantic search. Default: deterministic hash
+   *  embeddings (offline, hermetic). Pass `false` to skip indexing on save. */
+  embeddings?: EmbeddingProvider | false;
+}
+
+export interface SearchRequestFull {
+  query: string;
+  scope?: string;
+  topK?: number;
+  budgetTokens?: number;
+}
+
+export interface SearchHit {
+  slug: string;
+  section: string;
+  snippet: string;
+  score: number;
+}
+
+export interface SearchResult {
+  hits: SearchHit[];
+  provider: string;
+  scanned: number;
+  skipped: number;
 }
 
 export interface SaveResult {
@@ -60,14 +86,23 @@ export interface ForgetResult {
 export class Store {
   readonly cfg: StoreConfig;
   private index: MetaIndex | null = null;
+  private embedder: EmbeddingProvider | null;
+  private readonly indexingEnabled: boolean;
 
   constructor(opts: StoreOptions = {}) {
     this.cfg = opts.home !== undefined ? resolveConfig(opts.home) : resolveConfig();
+    this.indexingEnabled = opts.embeddings !== false;
+    this.embedder = opts.embeddings || null;
   }
 
   private getIndex(): MetaIndex {
     if (!this.index) this.index = new MetaIndex(this.cfg.indexPath);
     return this.index;
+  }
+
+  private getEmbedder(): EmbeddingProvider {
+    if (!this.embedder) this.embedder = new HashEmbeddings();
+    return this.embedder;
   }
 
   close(): void {
@@ -87,12 +122,14 @@ export class Store {
     let summaryTokens = 0;
     let workingTokens = 0;
     let fullTokens = 0;
+    const chunkSources: Array<{ section: string; text: string }> = [];
 
     if (text) {
       const summary = firstLines(text, 40);
       await atomicWrite(summaryPath(this.cfg, req.slug), summary);
       manifest.sections.summary = true;
       summaryTokens += estimateTokens(summary);
+      chunkSources.push({ section: 'summary', text: summary });
 
       if (req.hints?.keepRaw !== false) {
         await atomicWrite(join(rawDir(this.cfg, req.slug), 'thread.md'), text);
@@ -108,6 +145,7 @@ export class Store {
         await atomicWrite(join(filesDir(this.cfg, req.slug), name), f.content);
         kept.push(name);
         workingTokens += estimateTokens(f.content);
+        chunkSources.push({ section: `file:${name}`, text: f.content });
       }
       manifest.sections.files = uniq([...manifest.sections.files, ...kept]);
     }
@@ -126,8 +164,73 @@ export class Store {
 
     await writeManifest(this.cfg, manifest);
     this.getIndex().upsert(manifest);
+    await this.indexChunks(req.slug, chunkSources);
 
     return { slug: manifest.slug, version: manifest.version, tokens: manifest.tokens };
+  }
+
+  private async indexChunks(
+    slug: string,
+    sources: Array<{ section: string; text: string }>,
+  ): Promise<void> {
+    if (!this.indexingEnabled) return;
+    const chunks: Chunk[] = [];
+    for (const s of sources) chunks.push(...chunkText(s.section, s.text));
+    if (!chunks.length) {
+      this.getIndex().replaceChunks(slug, []);
+      return;
+    }
+    const embedder = this.getEmbedder();
+    const vectors = await embedder.embed(chunks.map((c) => c.content));
+    const rows: ChunkInsert[] = chunks.map((c, i) => ({
+      section: c.section,
+      ord: c.ord,
+      content: c.content,
+      tokens: c.tokens,
+      provider: embedder.id,
+      dim: embedder.dim,
+      embedding: f32ToBuffer(vectors[i]!),
+    }));
+    this.getIndex().replaceChunks(slug, rows);
+  }
+
+  async search(req: SearchRequestFull): Promise<SearchResult> {
+    const embedder = this.getEmbedder();
+    const [queryVec] = await embedder.embed([req.query]);
+    const rows = this.getIndex().scanChunks(req.scope);
+
+    let skipped = 0;
+    const scored: SearchHit[] = [];
+    for (const r of rows) {
+      if (r.provider !== embedder.id) {
+        skipped++;
+        continue;
+      }
+      const vec = bufferToF32(r.embedding);
+      scored.push({
+        slug: r.slug,
+        section: r.section,
+        snippet: snippet(r.content),
+        score: cosine(queryVec!, vec),
+      });
+    }
+    scored.sort((a, b) => b.score - a.score);
+
+    const topK = req.topK ?? 5;
+    const budget = req.budgetTokens;
+    const hits: SearchHit[] = [];
+    let spent = 0;
+    for (const hit of scored) {
+      if (hits.length >= topK) break;
+      if (budget !== undefined) {
+        const cost = estimateTokens(hit.snippet);
+        if (spent + cost > budget && hits.length > 0) break;
+        spent += cost;
+      }
+      hits.push(hit);
+    }
+
+    return { hits, provider: embedder.id, scanned: rows.length, skipped };
   }
 
   async load(req: LoadRequest): Promise<LoadResult> {
@@ -225,6 +328,7 @@ export class Store {
     if (req.purge) {
       await rm(dir, { recursive: true, force: true });
       this.getIndex().delete(req.slug);
+      this.getIndex().deleteChunks(req.slug);
       return { slug: req.slug, moved: null };
     }
 
@@ -233,6 +337,7 @@ export class Store {
     await mkdir(this.cfg.trashDir, { recursive: true });
     await rename(dir, trashPath);
     this.getIndex().delete(req.slug);
+    this.getIndex().deleteChunks(req.slug);
     return { slug: req.slug, moved: trashPath };
   }
 
@@ -248,6 +353,21 @@ export class Store {
     }
     return n;
   }
+}
+
+function f32ToBuffer(v: Float32Array): Buffer {
+  return Buffer.from(v.buffer, v.byteOffset, v.byteLength);
+}
+
+function bufferToF32(b: Buffer): Float32Array {
+  // Copy out of the pooled buffer so alignment + lifetime are safe.
+  const copy = b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+  return new Float32Array(copy);
+}
+
+function snippet(content: string, max = 240): string {
+  const flat = content.replace(/\s+/g, ' ').trim();
+  return flat.length > max ? `${flat.slice(0, max)}…` : flat;
 }
 
 function inferSourceKind(req: SaveRequest): Manifest['sourceKind'] {

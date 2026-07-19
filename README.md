@@ -2,7 +2,7 @@
 
 Persistent, local-first context store. Save context in one chat, load it in another. Works from any tool that can shell out to a CLI, hit a REST endpoint, or talk MCP.
 
-**Status: M1 + M4 shipped.** Save/load/list/forget on disk with a SQLite metadata index (M1). MCP server so any chat client can call the store, plus `ace mcp install` for one-command wire-up (M4). Semantic search (M2), extractors (M3), and the LLM proxy pipeline land in later milestones — see the [architecture plan](../../../.claude/plans/ai-context-engine-semantic-parsed-bee.md).
+**Status: M1 + M2 + M4 shipped.** Save/load/list/forget on disk with a SQLite metadata index (M1). Semantic search across all saved contexts (M2). MCP server so any chat client can call the store, plus `ace mcp install` for one-command wire-up (M4). Extractors (M3) and the LLM proxy pipeline land in later milestones — see the [architecture plan](../../../.claude/plans/ai-context-engine-semantic-parsed-bee.md).
 
 ## Try it now
 
@@ -42,6 +42,10 @@ node packages/cli/bin/ace.js save today/thread --from-clipboard --tag urgent
 # Load into any chat — engine picks the largest shape that fits your budget
 node packages/cli/bin/ace.js load project/auth-refactor --shape summary --budget 4000
 
+# Semantic search across everything you've saved
+node packages/cli/bin/ace.js search "what did we decide about session tokens"
+node packages/cli/bin/ace.js search "caching strategy" --scope project/ --top-k 3
+
 # List with filters
 node packages/cli/bin/ace.js list --prefix project/ --tag auth
 
@@ -75,11 +79,20 @@ Every operation returns a `trace` — an array of decisions each middleware made
 
 ## Layout
 
-- `packages/core`  — engine + middleware kernel + types + tracing
-- `packages/store` — on-disk context store (SQLite index, markdown content)
-- `packages/mcp`   — MCP server (`ace-mcp`) exposing the store as MCP tools
-- `packages/cli`   — the `ace` binary (save/load/list/forget/mcp install)
-- `demos/`         — per-milestone runnable demos
+- `packages/core`       — engine + middleware kernel + types + tracing
+- `packages/store`      — on-disk context store (SQLite index, markdown content)
+- `packages/embeddings` — provider-agnostic embeddings (hash default, Ollama opt-in)
+- `packages/mcp`        — MCP server (`ace-mcp`) exposing the store as MCP tools
+- `packages/cli`        — the `ace` binary (save/load/search/list/forget/mcp install)
+- `demos/`              — per-milestone runnable demos
+
+## Semantic search
+
+`ace search` (and the `context_search` MCP tool) embeds your query and ranks chunks of every saved context by cosine similarity.
+
+- **Default embeddings:** deterministic, dependency-free hash embeddings — offline, hermetic, lexical-overlap quality. No model or network needed.
+- **Real semantics:** if a local [Ollama](https://ollama.com) server is running with `nomic-embed-text` pulled, the CLI and MCP server pick it up automatically (`OLLAMA_HOST` to override). Save and search use the same provider so vectors stay comparable.
+- Vectors are stored as blobs in the SQLite index; matching is a brute-force cosine scan. Fast at personal-store scale; swap in a vector extension (sqlite-vec / pgvector) when chunk counts get large.
 
 ## On-disk shape
 

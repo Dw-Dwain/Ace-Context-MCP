@@ -112,6 +112,58 @@ describe('Store', () => {
   });
 });
 
+describe('Store semantic search', () => {
+  it('ranks the relevant context above unrelated ones', async () => {
+    await withStore(async (store) => {
+      await store.save({
+        slug: 'project/auth',
+        source: { text: 'we decided session tokens expire after 15 minutes and rotate on use' },
+      });
+      await store.save({
+        slug: 'project/ui',
+        source: { text: 'the dashboard uses a dark theme with a sidebar navigation' },
+      });
+      await store.save({
+        slug: 'notes/lunch',
+        source: { text: 'good ramen place near the office on 3rd street' },
+      });
+
+      const res = await store.search({ query: 'what did we decide about session tokens' });
+      expect(res.hits.length).toBeGreaterThan(0);
+      expect(res.hits[0]!.slug).toBe('project/auth');
+      expect(res.provider).toMatch(/^hash-v1/);
+    });
+  });
+
+  it('respects topK', async () => {
+    await withStore(async (store) => {
+      for (let i = 0; i < 5; i++) {
+        await store.save({ slug: `bulk/${i}`, source: { text: `token session note number ${i}` } });
+      }
+      const res = await store.search({ query: 'token session', topK: 2 });
+      expect(res.hits.length).toBe(2);
+    });
+  });
+
+  it('scopes search to a slug prefix', async () => {
+    await withStore(async (store) => {
+      await store.save({ slug: 'a/one', source: { text: 'alpha token content' } });
+      await store.save({ slug: 'b/one', source: { text: 'beta token content' } });
+      const res = await store.search({ query: 'token content', scope: 'a/' });
+      expect(res.hits.every((h) => h.slug.startsWith('a/'))).toBe(true);
+    });
+  });
+
+  it('drops chunks when a context is forgotten', async () => {
+    await withStore(async (store) => {
+      await store.save({ slug: 'gone/soon', source: { text: 'ephemeral token data' } });
+      await store.forget({ slug: 'gone/soon', purge: true });
+      const res = await store.search({ query: 'ephemeral token data' });
+      expect(res.hits.find((h) => h.slug === 'gone/soon')).toBeUndefined();
+    });
+  });
+});
+
 describe('storeMiddleware via Engine', () => {
   it('handles save then load via engine.run', async () => {
     const home = await mkdtemp(join(tmpdir(), 'ace-store-eng-'));

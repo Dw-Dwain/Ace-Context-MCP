@@ -40,9 +40,15 @@ export function storeMiddleware(input: Store | StoreOptions = {}): Middleware {
           break;
         }
         case 'search': {
-          // ponytail: real semantic search lands in M2 with embeddings + sqlite-vss.
-          ctx.response = { hits: [], note: 'search available in M2' };
-          recordDecision(ctx, 'store', { kind: 'search', note: 'not-implemented-until-m2' });
+          const res = await store.search(op.input);
+          ctx.response = res;
+          recordDecision(ctx, 'store', {
+            kind: 'search',
+            provider: res.provider,
+            scanned: res.scanned,
+            skipped: res.skipped,
+            hits: res.hits.length,
+          });
           break;
         }
       }

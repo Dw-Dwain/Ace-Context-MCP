@@ -1,5 +1,14 @@
 export { Store } from './store.js';
-export type { StoreOptions, SaveResult, LoadResult, ListResult, ForgetResult } from './store.js';
+export type {
+  StoreOptions,
+  SaveResult,
+  LoadResult,
+  ListResult,
+  ForgetResult,
+  SearchRequestFull,
+  SearchHit,
+  SearchResult,
+} from './store.js';
 export { storeMiddleware } from './middleware.js';
 export { resolveConfig } from './config.js';
 export type { StoreConfig } from './config.js';

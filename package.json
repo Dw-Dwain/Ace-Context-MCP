@@ -14,6 +14,7 @@
     "test": "pnpm -r --filter=./packages/* test",
     "typecheck": "pnpm -r --filter=./packages/* typecheck",
     "demo:m1": "tsx demos/M1.ts",
+    "demo:m2": "tsx demos/M2.ts",
     "demo:m4": "pnpm -r build && tsx demos/M4.ts"
   },
   "dependencies": {

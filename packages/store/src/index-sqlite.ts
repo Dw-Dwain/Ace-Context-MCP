@@ -39,6 +39,19 @@ export class MetaIndex {
       );
       CREATE INDEX IF NOT EXISTS ix_contexts_prefix ON contexts(slug);
       CREATE INDEX IF NOT EXISTS ix_contexts_updated ON contexts(updated_at DESC);
+
+      CREATE TABLE IF NOT EXISTS chunks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT NOT NULL,
+        section TEXT NOT NULL,
+        ord INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        tokens INTEGER NOT NULL,
+        provider TEXT NOT NULL,
+        dim INTEGER NOT NULL,
+        embedding BLOB NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS ix_chunks_slug ON chunks(slug);
     `);
   }
 
@@ -124,7 +137,68 @@ export class MetaIndex {
     }));
   }
 
+  replaceChunks(slug: string, rows: ChunkInsert[]): void {
+    const del = this.db.prepare('DELETE FROM chunks WHERE slug = ?');
+    const ins = this.db.prepare(
+      `INSERT INTO chunks (slug, section, ord, content, tokens, provider, dim, embedding)
+       VALUES (@slug, @section, @ord, @content, @tokens, @provider, @dim, @embedding)`,
+    );
+    const tx = this.db.transaction((items: ChunkInsert[]) => {
+      del.run(slug);
+      for (const r of items) {
+        ins.run({
+          slug,
+          section: r.section,
+          ord: r.ord,
+          content: r.content,
+          tokens: r.tokens,
+          provider: r.provider,
+          dim: r.dim,
+          embedding: r.embedding,
+        });
+      }
+    });
+    tx(rows);
+  }
+
+  deleteChunks(slug: string): void {
+    this.db.prepare('DELETE FROM chunks WHERE slug = ?').run(slug);
+  }
+
+  scanChunks(prefix?: string): ChunkRow[] {
+    const sql = prefix
+      ? `SELECT slug, section, ord, content, tokens, provider, dim, embedding
+         FROM chunks WHERE slug LIKE @prefix`
+      : `SELECT slug, section, ord, content, tokens, provider, dim, embedding FROM chunks`;
+    const stmt = this.db.prepare(sql);
+    const rows = (prefix ? stmt.all({ prefix: `${prefix}%` }) : stmt.all()) as Array<{
+      slug: string;
+      section: string;
+      ord: number;
+      content: string;
+      tokens: number;
+      provider: string;
+      dim: number;
+      embedding: Buffer;
+    }>;
+    return rows;
+  }
+
   close(): void {
     this.db.close();
   }
+}
+
+export interface ChunkInsert {
+  section: string;
+  ord: number;
+  content: string;
+  tokens: number;
+  provider: string;
+  dim: number;
+  embedding: Buffer;
+}
+
+export interface ChunkRow extends ChunkInsert {
+  slug: string;
 }

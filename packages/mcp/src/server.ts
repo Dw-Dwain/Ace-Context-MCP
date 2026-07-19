@@ -130,22 +130,29 @@ export function createAceServer(opts: AceServerOptions): McpServer {
     {
       title: 'Search saved contexts',
       description:
-        'Semantic cross-context search. Available from milestone M2. This is a stub that returns an empty result set.',
+        'Semantic search across every saved context. Returns ranked snippets with their source slug; load the slug for the full context.',
       inputSchema: {
         query: z.string(),
-        scope: z.string().optional(),
+        scope: z.string().optional().describe('Restrict to a slug prefix, e.g. "project/"'),
         topK: z.number().int().positive().max(50).optional(),
         budgetTokens: z.number().int().positive().optional(),
       },
     },
-    ({ query }) => ({
-      content: [
-        {
-          type: 'text',
-          text: `context_search is not implemented until M2. Query received: "${query}". Use context_list with --prefix/--tag as a stopgap.`,
-        },
-      ],
-    }),
+    async ({ query, scope, topK, budgetTokens }) => {
+      const req: { query: string; scope?: string; topK?: number; budgetTokens?: number } = { query };
+      if (scope !== undefined) req.scope = scope;
+      if (topK !== undefined) req.topK = topK;
+      if (budgetTokens !== undefined) req.budgetTokens = budgetTokens;
+      const res = await store.search(req);
+      const body = res.hits.length
+        ? res.hits.map((h) => `${h.score.toFixed(3)}  ${h.slug}#${h.section}\n    ${h.snippet}`).join('\n')
+        : '(no matches)';
+      const note =
+        res.skipped > 0
+          ? `\n\n(${res.skipped} chunks skipped: different embedding provider than ${res.provider}; re-save to reindex)`
+          : '';
+      return { content: [{ type: 'text', text: body + note }] };
+    },
   );
 
   return server;
