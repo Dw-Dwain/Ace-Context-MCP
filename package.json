@@ -19,7 +19,8 @@
     "demo:m4": "pnpm -r build && tsx demos/M4.ts",
     "demo:m5": "tsx demos/M5.ts",
     "demo:m6": "tsx demos/M6.ts",
-    "demo:m8": "tsx demos/M8.ts"
+    "demo:m8": "tsx demos/M8.ts",
+    "demo:m9": "tsx demos/M9.ts"
   },
   "dependencies": {
     "@ace/cache": "workspace:*",

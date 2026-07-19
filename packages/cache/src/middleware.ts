@@ -29,6 +29,7 @@ export function cacheMiddleware(cache: Cache): Middleware {
     },
     after: async (ctx) => {
       if (ctx.meta.cacheHit) return;
+      if (ctx.meta.streaming) return; // ponytail: buffer + cache streams in a later pass
       if (!ctx.response) return;
       const input = ctx.op.input as ChatRequest;
       await cache.store({ model: input.model ?? 'auto', messages: resolveMessages(ctx) }, ctx.response as CachedResponse);

@@ -24,9 +24,16 @@ export interface ProviderResponse {
   stopReason?: string;
 }
 
+export interface StreamChunk {
+  delta: string;
+  done: boolean;
+}
+
 export interface Provider {
   readonly id: string;
   chat(req: ProviderRequest): Promise<ProviderResponse>;
+  /** Optional streaming. Providers without it fall back to non-streaming. */
+  chatStream?(req: ProviderRequest): AsyncIterable<StreamChunk>;
 }
 
 export interface RouteAttempt {

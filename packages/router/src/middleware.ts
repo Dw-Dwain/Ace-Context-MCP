@@ -56,6 +56,15 @@ export function routerMiddleware(router: Router): Middleware {
       if (input.temperature !== undefined) preq.temperature = input.temperature;
       if (input.maxTokens !== undefined) preq.maxTokens = input.maxTokens;
 
+      if (input.stream) {
+        // Streaming path: response is an async iterable of chunks. Downstream
+        // store/cache stages skip streaming responses (see ctx.meta.streaming).
+        ctx.meta.streaming = true;
+        ctx.response = router.chatStream(preq);
+        recordDecision(ctx, 'router', { streaming: true, chain: router.resolve(preq.model).chain });
+        return;
+      }
+
       const outcome = await router.chat(preq);
       ctx.response = outcome.result;
       recordDecision(ctx, 'router', {

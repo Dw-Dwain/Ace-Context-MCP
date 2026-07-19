@@ -1,4 +1,4 @@
-import type { Provider, ProviderRequest, ProviderResponse } from '../types.js';
+import type { Provider, ProviderRequest, ProviderResponse, StreamChunk } from '../types.js';
 
 export interface MockOptions {
   id?: string;
@@ -34,6 +34,15 @@ export class MockProvider implements Provider {
       },
       stopReason: 'end_turn',
     });
+  }
+
+  async *chatStream(req: ProviderRequest): AsyncIterable<StreamChunk> {
+    if (this.opts.fail) throw new Error(`${this.id} provider forced failure`);
+    const full = (await this.chat(req)).content;
+    for (const word of full.split(/(\s+)/)) {
+      if (word) yield { delta: word, done: false };
+    }
+    yield { delta: '', done: true };
   }
 }
 

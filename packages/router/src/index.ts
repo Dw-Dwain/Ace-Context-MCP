@@ -4,6 +4,8 @@ export { MockProvider } from './providers/mock.js';
 export type { MockOptions } from './providers/mock.js';
 export { AnthropicProvider } from './providers/anthropic.js';
 export type { AnthropicOptions } from './providers/anthropic.js';
+export { OpenAICompatProvider, openai, openrouter, ollama, gemini } from './providers/openai-compat.js';
+export type { OpenAICompatOptions, FetchLike } from './providers/openai-compat.js';
 export {
   normalizeChatMiddleware,
   validateChatMiddleware,
@@ -17,4 +19,5 @@ export type {
   ProviderUsage,
   RouteAttempt,
   RouteOutcome,
+  StreamChunk,
 } from './types.js';

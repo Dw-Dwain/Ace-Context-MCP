@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { Provider, ProviderRequest, ProviderResponse } from '../types.js';
+import type { Provider, ProviderRequest, ProviderResponse, StreamChunk } from '../types.js';
 
 export interface AnthropicOptions {
   apiKey?: string;
@@ -41,5 +41,22 @@ export class AnthropicProvider implements Provider {
       usage: { inputTokens: msg.usage.input_tokens, outputTokens: msg.usage.output_tokens },
       ...(msg.stop_reason ? { stopReason: msg.stop_reason } : {}),
     };
+  }
+
+  async *chatStream(req: ProviderRequest): AsyncIterable<StreamChunk> {
+    const model = req.model === 'auto' ? this.defaultModel : req.model;
+    const stream = this.client.messages.stream({
+      model,
+      max_tokens: req.maxTokens ?? 1024,
+      ...(req.system ? { system: req.system } : {}),
+      ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
+      messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
+    });
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        yield { delta: event.delta.text, done: false };
+      }
+    }
+    yield { delta: '', done: true };
   }
 }
