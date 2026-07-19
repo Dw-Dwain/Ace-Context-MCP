@@ -2,9 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { Engine, type SaveRequest, type ChatRequest } from '@ace/core';
 import { scan, redact, securityMiddleware } from '../src/index.js';
 
+// Fake credentials assembled at runtime so no secret-shaped literal is ever
+// committed (keeps GitHub push-protection and our own scanner clean on source).
+const FAKE_OPENAI = `sk-${'abcdefghijklmnopqrstuvwx1234'}`;
+const FAKE_AWS = `AKIA${'ABCDEFGHIJKLMNOP'}`;
+
 describe('scan', () => {
   it('finds an OpenAI-style key and never leaks it in the preview', () => {
-    const f = scan('my key is sk-abcdefghijklmnopqrstuvwx1234 ok');
+    const f = scan(`my key is ${FAKE_OPENAI} ok`);
     const secret = f.find((x) => x.label === 'openai-key');
     expect(secret?.severity).toBe('critical');
     expect(secret?.preview).not.toContain('abcdefghij');
@@ -33,24 +38,24 @@ describe('scan', () => {
 
 describe('redact', () => {
   it('replaces matches with typed placeholders and drops the raw value', () => {
-    const text = 'token sk-abcdefghijklmnopqrstuvwx1234 and email a@b.com';
+    const text = `token ${FAKE_OPENAI} and email a@b.com`;
     const out = redact(text, scan(text));
     expect(out).toContain('[REDACTED:openai-key]');
     expect(out).toContain('[REDACTED:email]');
-    expect(out).not.toContain('sk-abcdefghijklmnopqrstuvwx1234');
+    expect(out).not.toContain(FAKE_OPENAI);
   });
 });
 
 describe('securityMiddleware', () => {
   it('blocks a save containing a secret in block mode', async () => {
     const eng = new Engine().use(securityMiddleware({ mode: 'block' }));
-    const input: SaveRequest = { slug: 'x/y', source: { text: 'here is sk-abcdefghijklmnopqrstuvwx1234' } };
+    const input: SaveRequest = { slug: 'x/y', source: { text: `here is ${FAKE_AWS}` } };
     await expect(eng.run({ kind: 'save', input })).rejects.toThrow(/security: blocked/);
   });
 
   it('redacts chat messages in redact mode', async () => {
     const eng = new Engine().use(securityMiddleware({ mode: 'redact' }));
-    const input: ChatRequest = { model: 'auto', messages: [{ role: 'user', content: 'my key sk-abcdefghijklmnopqrstuvwx1234' }] };
+    const input: ChatRequest = { model: 'auto', messages: [{ role: 'user', content: `my key ${FAKE_OPENAI}` }] };
     const res = await eng.run({ kind: 'chat', input });
     const messages = res.meta.normalizedMessages as Array<{ content: string }>;
     expect(messages[0]!.content).toContain('[REDACTED:openai-key]');

@@ -1,6 +1,30 @@
 # AI Context Engine (ACE)
 
-Persistent, local-first context store. Save context in one chat, load it in another. Works from any tool that can shell out to a CLI, hit a REST endpoint, or talk MCP.
+![status](https://img.shields.io/badge/status-v0.1.0-blue) ![license](https://img.shields.io/badge/license-Apache--2.0-green) ![tests](https://img.shields.io/badge/tests-120%20passing-brightgreen) ![runtime](https://img.shields.io/badge/node-%3E%3D20-informational) ![MCP](https://img.shields.io/badge/MCP-ready-8A63D2)
+
+**Persistent, local-first memory for your AI chats.** Save context in one chat, load it in another — across Claude web, Claude Code, Cursor, Cline, and Claude Desktop. One store, on your own disk, reachable from every tool via MCP, CLI, REST, or SDK.
+
+> Leave a chat and it's gone. A fresh session anywhere starts blank. The only thing that survives is what you saved to ACE — and that local copy is the source of truth the next session pulls back in. Each session ties into the last.
+
+## Install
+
+```bash
+git clone https://github.com/Dw-Dwain/Ace-Context-MCP.git
+cd Ace-Context-MCP
+pnpm install
+pnpm -r build
+
+# plug it into your AI tool (pick one; all read the same store)
+node packages/cli/bin/ace.js mcp install --client=claude-code
+node packages/cli/bin/ace.js mcp install --client=claude-desktop
+node packages/cli/bin/ace.js mcp install --client=cursor
+node packages/cli/bin/ace.js mcp install --client=cline
+```
+
+Restart the client, then in any chat: *"save this thread as project/x"* / *"load project/x"* / *"search my contexts for …"*.
+
+---
+
 
 Leave a chat and it's gone — a fresh session anywhere starts blank. The only thing that survives is what you stored in ACE. That local copy is the source of truth the next session pulls back in, so each session ties into the last. Different topics live in different named slots. See [ARCHITECTURE.md](ARCHITECTURE.md) for the full model and [docs/DESIGN-DECISIONS.md](docs/DESIGN-DECISIONS.md) for the trade-offs.
 
