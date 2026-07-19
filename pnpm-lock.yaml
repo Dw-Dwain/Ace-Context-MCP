@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@ace/cache':
+        specifier: workspace:*
+        version: link:packages/cache
       '@ace/core':
         specifier: workspace:*
         version: link:packages/core
@@ -30,6 +33,25 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.5
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/cache:
+    dependencies:
+      '@ace/core':
+        specifier: workspace:*
+        version: link:../core
+      '@ace/embeddings':
+        specifier: workspace:*
+        version: link:../embeddings
+    devDependencies:
+      '@types/node':
+        specifier: ^22.9.0
+        version: 22.20.1
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

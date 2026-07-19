@@ -38,6 +38,8 @@ export function routerMiddleware(router: Router): Middleware {
     name: 'router',
     appliesTo: ['chat'],
     before: async (ctx) => {
+      // A cache hit upstream already set the response; don't call a provider.
+      if (ctx.meta.cacheHit) return;
       const input = ctx.op.input as ChatRequest;
       const messages = (ctx.meta.normalizedMessages ?? input.messages) as ChatRequest['messages'];
       const system = messages
