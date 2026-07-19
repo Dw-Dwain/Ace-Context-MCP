@@ -2,7 +2,7 @@
 
 Persistent, local-first context store. Save context in one chat, load it in another. Works from any tool that can shell out to a CLI, hit a REST endpoint, or talk MCP.
 
-**Status: M1 + M2 + M4 shipped.** Save/load/list/forget on disk with a SQLite metadata index (M1). Semantic search across all saved contexts (M2). MCP server so any chat client can call the store, plus `ace mcp install` for one-command wire-up (M4). Extractors (M3) and the LLM proxy pipeline land in later milestones — see the [architecture plan](../../../.claude/plans/ai-context-engine-semantic-parsed-bee.md).
+**Status: M1 + M2 + M3 + M4 shipped.** Save/load/list/forget on disk with a SQLite metadata index (M1). Semantic search across all saved contexts (M2). Automatic extraction of decisions/facts/snippets from raw threads (M3). MCP server so any chat client can call the store, plus `ace mcp install` for one-command wire-up (M4). The LLM proxy pipeline lands next — see the [architecture plan](../../../.claude/plans/ai-context-engine-semantic-parsed-bee.md).
 
 ## Try it now
 
@@ -82,9 +82,21 @@ Every operation returns a `trace` — an array of decisions each middleware made
 - `packages/core`       — engine + middleware kernel + types + tracing
 - `packages/store`      — on-disk context store (SQLite index, markdown content)
 - `packages/embeddings` — provider-agnostic embeddings (hash default, Ollama opt-in)
+- `packages/extract`    — thread → decisions / facts / snippets / summary
 - `packages/mcp`        — MCP server (`ace-mcp`) exposing the store as MCP tools
 - `packages/cli`        — the `ace` binary (save/load/search/list/forget/mcp install)
 - `demos/`              — per-milestone runnable demos
+
+## Extraction
+
+On save, a raw chat thread (a `Role:`-prefixed transcript, or a structured message array) is distilled into:
+
+- **decisions** — sentences with decision cues ("we decided", "let's go with", "decision:", "agreed to", …)
+- **facts** — bullet-point statements, deduplicated
+- **snippets** — fenced code blocks, named and language-tagged
+- **summary** — the opening ask plus thread shape
+
+These populate the layered load shapes: `summary` returns summary+decisions+facts; `working` adds snippets+files; `full` adds the raw thread. Re-saving the same slug merges and dedups decisions/facts. Opt out with `ace save --no-extract` or `hints.extract: []`. Extraction is heuristic and offline — swap in an LLM pass later without changing the store.
 
 ## Semantic search
 

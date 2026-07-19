@@ -18,6 +18,7 @@ program
   .option('--tag <tag>', 'tag to attach (repeatable)', collect, [] as string[])
   .option('--ttl-days <n>', 'time-to-live in days', (v) => Number(v))
   .option('--no-raw', 'do not keep raw source')
+  .option('--no-extract', 'skip decisions/facts/snippets extraction')
   .action(async (slug: string, opts) => {
     const store = await openStoreAuto();
     try {
@@ -27,15 +28,18 @@ program
         fromClipboard: opts.fromClipboard,
         fromStdin: !opts.file && opts.text === undefined && !opts.fromClipboard,
       });
-      const res = await store.save({
-        slug,
-        source: { text },
-        hints: {
-          tags: opts.tag,
-          ttlDays: opts.ttlDays,
-          keepRaw: opts.raw !== false,
-        },
-      });
+      const hints: {
+        tags: string[];
+        ttlDays?: number;
+        keepRaw: boolean;
+        extract?: Array<'decisions' | 'facts' | 'snippets'>;
+      } = {
+        tags: opts.tag,
+        keepRaw: opts.raw !== false,
+      };
+      if (opts.ttlDays !== undefined) hints.ttlDays = opts.ttlDays;
+      if (opts.extract === false) hints.extract = [];
+      const res = await store.save({ slug, source: { text }, hints });
       process.stdout.write(
         `saved ${res.slug} v${res.version} · tokens summary=${res.tokens.summary} working=${res.tokens.working} full=${res.tokens.full}\n`,
       );

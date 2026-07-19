@@ -1,5 +1,5 @@
 {
-  "name": "@ace/store",
+  "name": "@ace/extract",
   "version": "0.0.1",
   "type": "module",
   "main": "./dist/index.js",
@@ -16,14 +16,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
-  "dependencies": {
-    "@ace/core": "workspace:*",
-    "@ace/embeddings": "workspace:*",
-    "@ace/extract": "workspace:*",
-    "better-sqlite3": "^12.11.1"
-  },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.9.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.5"
   }

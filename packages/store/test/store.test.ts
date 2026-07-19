@@ -112,6 +112,56 @@ describe('Store', () => {
   });
 });
 
+describe('Store extraction (M3)', () => {
+  const thread = [
+    'User: We need to swap the session cookie for JWT.',
+    'Assistant: Recommended:',
+    '- Access tokens expire after 15 minutes',
+    '- Refresh tokens rotate on use',
+    '```ts',
+    'interface Session { userId: string }',
+    '```',
+    "User: Ok let's go with that.",
+  ].join('\n');
+
+  it('populates decisions, facts, and snippets in the working shape', async () => {
+    await withStore(async (store) => {
+      await store.save({ slug: 'ex/auth', source: { text: thread } });
+      const loaded = await store.load({ slug: 'ex/auth', shape: 'working' });
+      expect(loaded.markdown).toContain('## Decisions');
+      expect(loaded.markdown.toLowerCase()).toContain("let's go with");
+      expect(loaded.markdown).toContain('## Facts');
+      expect(loaded.markdown).toContain('Access tokens expire after 15 minutes');
+      expect(loaded.markdown).toContain('interface Session');
+    });
+  });
+
+  it('merges and dedups decisions/facts across re-saves', async () => {
+    await withStore(async (store) => {
+      await store.save({ slug: 'ex/merge', source: { text: 'User: track notes\nAssistant:\n- fact one\n- fact two' } });
+      await store.save({ slug: 'ex/merge', source: { text: 'User: more notes\nAssistant:\n- fact two\n- fact three' } });
+      const loaded = await store.load({ slug: 'ex/merge', shape: 'summary' });
+      const factsSection = loaded.markdown.slice(loaded.markdown.indexOf('## Facts'));
+      const factTwoCount = (factsSection.match(/fact two/g) ?? []).length;
+      expect(factTwoCount).toBe(1);
+      expect(factsSection).toContain('fact one');
+      expect(factsSection).toContain('fact three');
+    });
+  });
+
+  it('honors extract opt-out', async () => {
+    await withStore(async (store) => {
+      await store.save({
+        slug: 'ex/optout',
+        source: { text: 'User: we decided to use JWT' },
+        hints: { extract: [] },
+      });
+      const loaded = await store.load({ slug: 'ex/optout', shape: 'working' });
+      expect(loaded.markdown).not.toContain('## Decisions');
+    });
+  });
+});
+
 describe('Store semantic search', () => {
   it('ranks the relevant context above unrelated ones', async () => {
     await withStore(async (store) => {

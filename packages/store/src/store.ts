@@ -9,6 +9,7 @@ import type {
   Shape,
 } from '@ace/core';
 import { HashEmbeddings, cosine, type EmbeddingProvider } from '@ace/embeddings';
+import { extract } from '@ace/extract';
 import { atomicWrite } from './atomic.js';
 import { chunkText, type Chunk } from './chunk.js';
 import { resolveConfig, type StoreConfig } from './config.js';
@@ -119,19 +120,55 @@ export class Store {
     if (req.hints?.ttlDays !== undefined) manifest.ttlDays = req.hints.ttlDays;
 
     const text = req.source.text ?? '';
+    const hasSource = Boolean(text || req.source.thread);
     let summaryTokens = 0;
     let workingTokens = 0;
     let fullTokens = 0;
     const chunkSources: Array<{ section: string; text: string }> = [];
 
-    if (text) {
-      const summary = firstLines(text, 40);
+    if (hasSource) {
+      const want = new Set(req.hints?.extract ?? ['decisions', 'facts', 'snippets']);
+      const source: { text?: string; thread?: unknown } = {};
+      if (text) source.text = text;
+      if (req.source.thread !== undefined) source.thread = req.source.thread;
+      const ex = extract(source);
+
+      const summary = ex.summary || firstLines(text, 40);
       await atomicWrite(summaryPath(this.cfg, req.slug), summary);
       manifest.sections.summary = true;
       summaryTokens += estimateTokens(summary);
       chunkSources.push({ section: 'summary', text: summary });
 
-      if (req.hints?.keepRaw !== false) {
+      if (want.has('decisions') && ex.decisions.length) {
+        const merged = mergeLines(await readMaybe(decisionsPath(this.cfg, req.slug)), ex.decisions);
+        const body = merged.map((d) => `- ${d}`).join('\n');
+        await atomicWrite(decisionsPath(this.cfg, req.slug), body);
+        manifest.sections.decisions = true;
+        summaryTokens += estimateTokens(body);
+        chunkSources.push({ section: 'decisions', text: merged.join('\n') });
+      }
+
+      if (want.has('facts') && ex.facts.length) {
+        const merged = mergeLines(await readMaybe(factsPath(this.cfg, req.slug)), ex.facts);
+        const body = merged.map((f) => `- ${f}`).join('\n');
+        await atomicWrite(factsPath(this.cfg, req.slug), body);
+        manifest.sections.facts = true;
+        summaryTokens += estimateTokens(body);
+        chunkSources.push({ section: 'facts', text: merged.join('\n') });
+      }
+
+      if (want.has('snippets') && ex.snippets.length) {
+        const names: string[] = [];
+        for (const s of ex.snippets) {
+          await atomicWrite(join(snippetsDir(this.cfg, req.slug), s.name), s.content);
+          names.push(s.name);
+          workingTokens += estimateTokens(s.content);
+          chunkSources.push({ section: `snippet:${s.name}`, text: s.content });
+        }
+        manifest.sections.snippets = names;
+      }
+
+      if (text && req.hints?.keepRaw !== false) {
         await atomicWrite(join(rawDir(this.cfg, req.slug), 'thread.md'), text);
         manifest.sections.raw = true;
         fullTokens += estimateTokens(text);
@@ -353,6 +390,33 @@ export class Store {
     }
     return n;
   }
+}
+
+async function readMaybe(p: string): Promise<string> {
+  try {
+    return await readFile(p, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+/** Merge existing bullet lines with new items, case-insensitive dedup, order
+ *  preserved (existing first). Used to accumulate decisions/facts across saves. */
+function mergeLines(existingBody: string, incoming: string[]): string[] {
+  const prev = existingBody
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*[-*+]\s+/, '').trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const x of [...prev, ...incoming]) {
+    const key = x.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      out.push(x);
+    }
+  }
+  return out;
 }
 
 function f32ToBuffer(v: Float32Array): Buffer {
