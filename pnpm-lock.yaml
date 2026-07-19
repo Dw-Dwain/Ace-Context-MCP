@@ -17,6 +17,9 @@ importers:
       '@ace/mcp':
         specifier: workspace:*
         version: link:packages/mcp
+      '@ace/optimize':
+        specifier: workspace:*
+        version: link:packages/optimize
       '@ace/router':
         specifier: workspace:*
         version: link:packages/router
@@ -140,6 +143,25 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.9.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.5
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/optimize:
+    dependencies:
+      '@ace/core':
+        specifier: workspace:*
+        version: link:../core
+      '@ace/embeddings':
+        specifier: workspace:*
+        version: link:../embeddings
     devDependencies:
       '@types/node':
         specifier: ^22.9.0

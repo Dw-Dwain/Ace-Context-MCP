@@ -181,7 +181,7 @@ describe('Store semantic search', () => {
       const res = await store.search({ query: 'what did we decide about session tokens' });
       expect(res.hits.length).toBeGreaterThan(0);
       expect(res.hits[0]!.slug).toBe('project/auth');
-      expect(res.provider).toMatch(/^hash-v1/);
+      expect(res.provider).toMatch(/^hash-v/);
     });
   });
 

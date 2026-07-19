@@ -16,7 +16,7 @@ export class HashEmbeddings implements EmbeddingProvider {
 
   constructor(dim = 1024) {
     this.dim = dim;
-    this.id = `hash-v1-${dim}`;
+    this.id = `hash-v2-${dim}`;
   }
 
   embed(texts: string[]): Promise<Float32Array[]> {
@@ -42,7 +42,9 @@ const STOPWORDS = new Set(
   (
     'a an the we i you it to of and or for in on at is are was were be been being do did does done ' +
     'what which that this these those about with as by from our us they them he she his her will would ' +
-    'can could should has have had not no but if then so up out get got there here your my me'
+    'can could should has have had not no but if then so up out get got there here your my me ' +
+    // Filler: carries no intent, so cleaning that removes it must not change the vector.
+    'just really basically actually simply very kinda sorta'
   ).split(' '),
 );
 

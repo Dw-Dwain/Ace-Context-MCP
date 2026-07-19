@@ -29,7 +29,7 @@ describe('HashEmbeddings', () => {
 
   it('reports a stable provider id and dim', () => {
     const e = new HashEmbeddings(128);
-    expect(e.id).toBe('hash-v1-128');
+    expect(e.id).toBe('hash-v2-128');
     expect(e.dim).toBe(128);
   });
 });
