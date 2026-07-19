@@ -23,7 +23,8 @@
     "demo:m9": "tsx demos/M9.ts",
     "demo:m11": "tsx demos/M11.ts",
     "serve": "pnpm --filter=@ace/server build && node apps/server/dist/main.js",
-    "enable:semantic": "pnpm add -w @huggingface/transformers"
+    "enable:semantic": "pnpm add -w @huggingface/transformers",
+    "setup:global": "pnpm -r build && npm link ./packages/mcp && npm link ./packages/cli"
   },
   "dependencies": {
     "@ace/cache": "workspace:*",

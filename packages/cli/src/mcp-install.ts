@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { homedir, platform } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync, copyFileSync } from 'node:fs';
 
@@ -13,13 +13,26 @@ export interface InstallOptions {
   overrideConfigPath?: string;
   overrideMcpBin?: string;
   backup?: boolean;
+  /** Force the PATH-command form (for tests). Normally auto-detected. */
+  forceGlobal?: boolean;
 }
 
 export interface InstallResult {
   configPath: string;
   binPath: string;
+  /** 'global' = PATH-resolved `ace-mcp` (survives moving the repo);
+   *  'local' = absolute path into this checkout. */
+  mode: 'global' | 'local';
   action: 'installed' | 'updated' | 'noop';
   backupPath: string | null;
+}
+
+/** True when an `ace-mcp` executable is resolvable on PATH (i.e. globally
+ *  installed), without executing it. */
+export function aceMcpOnPath(): boolean {
+  const dirs = (process.env.PATH ?? '').split(delimiter).filter(Boolean);
+  const names = platform() === 'win32' ? ['ace-mcp.cmd', 'ace-mcp.exe', 'ace-mcp.bat', 'ace-mcp'] : ['ace-mcp'];
+  return dirs.some((d) => names.some((n) => existsSync(join(d, n))));
 }
 
 /** VS Code's per-user config root, shared by the Cline extension's storage. */
@@ -83,7 +96,15 @@ export async function installMcp(opts: InstallOptions): Promise<InstallResult> {
     throw new Error(`unsupported client: ${opts.client}. Supported: ${CLIENTS.join(', ')}`);
   }
   const configPath = opts.overrideConfigPath ?? configPathFor(opts.client);
-  const binPath = opts.overrideMcpBin ?? resolveAceMcpBin();
+
+  // Prefer the PATH-resolved `ace-mcp` when globally installed — that config
+  // survives moving or deleting this checkout. Otherwise point at the absolute
+  // bin in this checkout (from-source; don't move the folder).
+  const useGlobal = opts.forceGlobal ?? (opts.overrideMcpBin ? false : aceMcpOnPath());
+  const mode: 'global' | 'local' = useGlobal ? 'global' : 'local';
+  const binPath = useGlobal ? 'ace-mcp' : (opts.overrideMcpBin ?? resolveAceMcpBin());
+  const command = useGlobal ? 'ace-mcp' : process.execPath;
+  const args = useGlobal ? [] : [binPath];
 
   let cfg: Record<string, unknown> = {};
   let hadFile = false;
@@ -95,14 +116,14 @@ export async function installMcp(opts: InstallOptions): Promise<InstallResult> {
 
   const servers = ((cfg.mcpServers as Record<string, unknown> | undefined) ?? {}) as Record<string, unknown>;
   const desired: Record<string, unknown> = {
-    command: process.execPath,
-    args: [binPath],
+    command,
+    args,
     env: opts.aceHome ? { ACE_HOME: opts.aceHome } : {},
   };
 
   const before = servers.ace;
   if (JSON.stringify(before) === JSON.stringify(desired)) {
-    return { configPath, binPath, action: 'noop', backupPath: null };
+    return { configPath, binPath, mode, action: 'noop', backupPath: null };
   }
 
   let backupPath: string | null = null;
@@ -119,6 +140,7 @@ export async function installMcp(opts: InstallOptions): Promise<InstallResult> {
   return {
     configPath,
     binPath,
+    mode,
     action: before === undefined ? 'installed' : 'updated',
     backupPath,
   };

@@ -99,6 +99,40 @@ describe('installMcp (claude-desktop)', () => {
     }
   });
 
+  it('writes a PATH-command (portable) entry in global mode', async () => {
+    const { dir, configPath, binPath } = await scratch();
+    try {
+      const res = await installMcp({
+        client: 'claude-code',
+        overrideConfigPath: configPath,
+        overrideMcpBin: binPath,
+        forceGlobal: true,
+      });
+      expect(res.mode).toBe('global');
+      const written = JSON.parse(await readFile(configPath, 'utf8')) as {
+        mcpServers: { ace: { command: string; args: string[] } };
+      };
+      expect(written.mcpServers.ace.command).toBe('ace-mcp');
+      expect(written.mcpServers.ace.args).toEqual([]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('defaults to local (absolute-path) mode when overrideMcpBin is given', async () => {
+    const { dir, configPath, binPath } = await scratch();
+    try {
+      const res = await installMcp({ client: 'cursor', overrideConfigPath: configPath, overrideMcpBin: binPath });
+      expect(res.mode).toBe('local');
+      const written = JSON.parse(await readFile(configPath, 'utf8')) as {
+        mcpServers: { ace: { args: string[] } };
+      };
+      expect(written.mcpServers.ace.args[0]).toBe(binPath);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('rejects unknown clients', async () => {
     await expect(
       installMcp({ client: 'not-a-real-client' as unknown as 'claude-desktop', overrideConfigPath: '/tmp/x' }),

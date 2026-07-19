@@ -146,10 +146,17 @@ mcp
     process.stdout.write(
       `ace-mcp registered in ${opts.client}\n` +
         `  action:      ${res.action}\n` +
+        `  mode:        ${res.mode}\n` +
         `  config file: ${res.configPath}\n` +
-        `  server bin:  ${res.binPath}\n` +
+        `  server:      ${res.binPath}\n` +
         (res.backupPath ? `  backup:      ${res.backupPath}\n` : ''),
     );
+    if (res.mode === 'local') {
+      process.stdout.write(
+        'Note: linked to this checkout — do not move/delete it. For a portable install,\n' +
+          'run `npm i -g @ace/cli @ace/mcp` (after publish) or `pnpm run setup:global`, then re-run this.\n',
+      );
+    }
     if (res.action !== 'noop') {
       process.stdout.write('Restart the client for the changes to take effect.\n');
     }
