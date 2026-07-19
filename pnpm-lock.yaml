@@ -20,9 +20,15 @@ importers:
       '@ace/optimize':
         specifier: workspace:*
         version: link:packages/optimize
+      '@ace/policy':
+        specifier: workspace:*
+        version: link:packages/policy
       '@ace/router':
         specifier: workspace:*
         version: link:packages/router
+      '@ace/security':
+        specifier: workspace:*
+        version: link:packages/security
       '@ace/store':
         specifier: workspace:*
         version: link:packages/store
@@ -189,6 +195,22 @@ importers:
         specifier: ^2.1.5
         version: 2.1.9(@types/node@22.20.1)
 
+  packages/policy:
+    dependencies:
+      '@ace/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^22.9.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.5
+        version: 2.1.9(@types/node@22.20.1)
+
   packages/router:
     dependencies:
       '@ace/core':
@@ -197,6 +219,22 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.112.0
         version: 0.112.3(zod@3.25.76)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.9.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.5
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/security:
+    dependencies:
+      '@ace/core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       '@types/node':
         specifier: ^22.9.0

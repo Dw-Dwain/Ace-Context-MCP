@@ -20,14 +20,17 @@
     "demo:m5": "tsx demos/M5.ts",
     "demo:m6": "tsx demos/M6.ts",
     "demo:m8": "tsx demos/M8.ts",
-    "demo:m9": "tsx demos/M9.ts"
+    "demo:m9": "tsx demos/M9.ts",
+    "demo:m11": "tsx demos/M11.ts"
   },
   "dependencies": {
     "@ace/cache": "workspace:*",
     "@ace/core": "workspace:*",
     "@ace/mcp": "workspace:*",
     "@ace/optimize": "workspace:*",
+    "@ace/policy": "workspace:*",
     "@ace/router": "workspace:*",
+    "@ace/security": "workspace:*",
     "@ace/store": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0"
   },
