@@ -14,4 +14,5 @@ Thumbs.db
 
 # ACE local store (default location for user data — never commit)
 .ace/
+.ace-*/
 ace-store/

@@ -99,6 +99,15 @@ const res = await engine.run({
 
 Every operation returns a `trace` — an array of decisions each middleware made, with timing. No hidden math.
 
+## Server + dashboard (M13)
+
+```bash
+pnpm serve          # builds @ace/server and starts it on http://127.0.0.1:4319
+```
+
+- REST: `POST /v1/contexts`, `GET /v1/contexts/:slug`, `POST /v1/contexts/search`, `GET /v1/contexts`, `DELETE /v1/contexts/:slug`.
+- Observability: `GET /metrics` (Prometheus), `GET /v1/traces` (recent runs with per-stage decisions), and a live dashboard at `/` (request counts, cache-hit rate, recent-request table) — self-contained HTML, no build step.
+
 ## Layout
 
 - `packages/core`       — engine + middleware kernel + types + tracing
