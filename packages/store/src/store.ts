@@ -120,13 +120,17 @@ export class Store {
   private withSlugLock<T>(slug: string, fn: () => Promise<T>): Promise<T> {
     const prev = this.locks.get(slug) ?? Promise.resolve();
     const run = prev.then(fn, fn);
-    this.locks.set(
-      slug,
-      run.then(
-        () => undefined,
-        () => undefined,
-      ),
+    const guard = run.then(
+      () => undefined,
+      () => undefined,
     );
+    this.locks.set(slug, guard);
+    // Drop the entry once this op settles — but only if no newer op replaced
+    // the guard meanwhile. Keeps the Map bounded to in-flight slugs, not every
+    // slug ever seen, while preserving serialization for queued ops.
+    void guard.then(() => {
+      if (this.locks.get(slug) === guard) this.locks.delete(slug);
+    });
     return run;
   }
 

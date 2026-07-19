@@ -43,6 +43,17 @@ describe('Store concurrency', () => {
     });
   });
 
+  it('does not leak lock entries after saves settle (bounded Map)', async () => {
+    await withStore(async (store) => {
+      await Promise.all(range(15).map((i) => store.save({ slug: `leak/${i}`, source: { text: `x ${i}` } })));
+      await store.forget({ slug: 'leak/0', purge: true });
+      // let the settle-callbacks flush
+      await new Promise((r) => setImmediate(r));
+      const locks = (store as unknown as { locks: Map<string, unknown> }).locks;
+      expect(locks.size).toBe(0);
+    });
+  });
+
   it('concurrent search + save do not throw', async () => {
     await withStore(async (store) => {
       await store.save({ slug: 'seed/a', source: { text: 'token session rotation policy' } });
