@@ -20,6 +20,9 @@ importers:
       '@ace/optimize':
         specifier: workspace:*
         version: link:packages/optimize
+      '@ace/pipeline':
+        specifier: workspace:*
+        version: link:packages/pipeline
       '@ace/policy':
         specifier: workspace:*
         version: link:packages/policy
