@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased (post-0.1.0 hardening)
+
+Closed the launch-blocker gaps identified in a readiness audit:
+- **@ace/pipeline** — `createChatPipeline()` assembles the whole chat chain (observe → normalize → validate → security → optimize → cache → compress → policy → router) in one call. The LLM proxy is now a product, not loose parts.
+- **LLM-backed extraction + intent** (opt-in) — `LlmExtractor` and a pluggable cache intent classifier, behind the same interfaces; heuristics stay the default and the fallback.
+- **Real semantic embeddings** — `LocalEmbeddings` (all-MiniLM via transformers.js, in-process, no server) auto-selected when present; the base install stays lean (zero native ML deps). `pnpm enable:semantic` to turn it on. Copy corrected: keyword search by default, semantic with one command or Ollama.
+- **Integration + E2E tests** — store concurrency, an MCP subprocess round-trip over stdio — and a **real concurrency bug** they caught (same-slug save race on Windows), fixed with a per-slug write lock.
+- **Location-independent install** — `ace mcp install` uses a PATH-resolved `ace-mcp` when globally installed (survives moving the repo), absolute-path fallback otherwise.
+- **CI** — GitHub Actions matrix: build + typecheck + test on Linux, macOS, Windows.
+
 ## 0.1.0
 
 First tagged release. The context store and the full middleware pipeline, all deterministic-and-offline by default with heavier implementations behind stable interfaces.
