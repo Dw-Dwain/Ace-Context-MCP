@@ -2,7 +2,7 @@
 
 Persistent, local-first context store. Save context in one chat, load it in another. Works from any tool that can shell out to a CLI, hit a REST endpoint, or talk MCP.
 
-**Status: M1 + M2 + M3 + M4 shipped.** Save/load/list/forget on disk with a SQLite metadata index (M1). Semantic search across all saved contexts (M2). Automatic extraction of decisions/facts/snippets from raw threads (M3). MCP server so any chat client can call the store, plus `ace mcp install` for one-command wire-up (M4). The LLM proxy pipeline lands next — see the [architecture plan](../../../.claude/plans/ai-context-engine-semantic-parsed-bee.md).
+**Status: M1–M5 shipped.** Save/load/list/forget on disk with a SQLite metadata index (M1). Semantic search across all saved contexts (M2). Automatic extraction of decisions/facts/snippets from raw threads (M3). MCP server so any chat client can call the store, plus `ace mcp install` for four clients (M4). LLM proxy pipeline — provider-agnostic routing with failover (M5). Cache, optimization, compression, security, and observability are the remaining milestones — see the [architecture plan](../../../.claude/plans/ai-context-engine-semantic-parsed-bee.md).
 
 ## Try it now
 
@@ -87,9 +87,34 @@ Every operation returns a `trace` — an array of decisions each middleware made
 - `packages/store`      — on-disk context store (SQLite index, markdown content)
 - `packages/embeddings` — provider-agnostic embeddings (hash default, Ollama opt-in)
 - `packages/extract`    — thread → decisions / facts / snippets / summary
+- `packages/router`     — provider adapters (Anthropic, mock) + routing/failover
 - `packages/mcp`        — MCP server (`ace-mcp`) exposing the store as MCP tools
 - `packages/cli`        — the `ace` binary (save/load/search/list/forget/mcp install)
 - `demos/`              — per-milestone runnable demos
+
+## LLM proxy pipeline (M5)
+
+The engine also fronts raw LLM calls, so an app gets routing, failover, and (in later milestones) caching/optimization for free:
+
+```ts
+import { Engine } from '@ace/core';
+import { Router, AnthropicProvider, MockProvider,
+         normalizeChatMiddleware, validateChatMiddleware, routerMiddleware } from '@ace/router';
+
+const router = new Router({
+  providers: [new AnthropicProvider(), new MockProvider()],
+  rules: [{ when: (m) => m === 'auto' || m.startsWith('claude'), use: 'anthropic', fallbacks: ['mock'] }],
+});
+
+const engine = new Engine()
+  .use(normalizeChatMiddleware())
+  .use(validateChatMiddleware())
+  .use(routerMiddleware(router));
+
+const res = await engine.chat({ messages: [{ role: 'user', content: 'hi' }], model: 'auto' });
+```
+
+Providers implement one interface (`chat(ProviderRequest): Promise<ProviderResponse>`); the Anthropic adapter is the only file importing a vendor SDK. Routing rules pick a provider by model and fail over down a chain — every attempt lands on the trace. `pnpm demo:m5` runs it against a mock (set `ANTHROPIC_API_KEY` to hit a real model).
 
 ## Extraction
 

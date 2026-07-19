@@ -2,10 +2,16 @@ import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import { deepFreeze } from './freeze.js';
 import type {
+  ChatRequest,
   EngineRunResult,
+  ForgetRequest,
+  ListRequest,
+  LoadRequest,
   Middleware,
   Operation,
   RequestContext,
+  SaveRequest,
+  SearchRequest,
   TraceEntry,
 } from './types.js';
 
@@ -41,6 +47,26 @@ export class Engine {
 
   list(): ReadonlyArray<Middleware> {
     return this.stages;
+  }
+
+  // Convenience wrappers over run() — one per operation kind.
+  save(input: SaveRequest): Promise<EngineRunResult> {
+    return this.run({ kind: 'save', input });
+  }
+  load(input: LoadRequest): Promise<EngineRunResult> {
+    return this.run({ kind: 'load', input });
+  }
+  search(input: SearchRequest): Promise<EngineRunResult> {
+    return this.run({ kind: 'search', input });
+  }
+  listContexts(input: ListRequest): Promise<EngineRunResult> {
+    return this.run({ kind: 'list', input });
+  }
+  forget(input: ForgetRequest): Promise<EngineRunResult> {
+    return this.run({ kind: 'forget', input });
+  }
+  chat(input: ChatRequest): Promise<EngineRunResult> {
+    return this.run({ kind: 'chat', input });
   }
 
   async run(op: Operation): Promise<EngineRunResult> {

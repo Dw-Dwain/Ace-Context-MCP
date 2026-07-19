@@ -16,11 +16,13 @@
     "demo:m1": "tsx demos/M1.ts",
     "demo:m2": "tsx demos/M2.ts",
     "demo:m3": "tsx demos/M3.ts",
-    "demo:m4": "pnpm -r build && tsx demos/M4.ts"
+    "demo:m4": "pnpm -r build && tsx demos/M4.ts",
+    "demo:m5": "tsx demos/M5.ts"
   },
   "dependencies": {
     "@ace/core": "workspace:*",
     "@ace/mcp": "workspace:*",
+    "@ace/router": "workspace:*",
     "@ace/store": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0"
   },
