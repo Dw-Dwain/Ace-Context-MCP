@@ -195,11 +195,17 @@ These populate the layered load shapes: `summary` returns summary+decisions+fact
 
 ## Semantic search
 
-`ace search` (and the `context_search` MCP tool) embeds your query and ranks chunks of every saved context by cosine similarity.
+`ace search` (and the `context_search` MCP tool) embeds your query and ranks chunks of every saved context by cosine similarity. Three tiers, auto-selected best-first — nothing required to start:
 
-- **Default embeddings:** deterministic, dependency-free hash embeddings — offline, hermetic, lexical-overlap quality. No model or network needed.
-- **Real semantics:** if a local [Ollama](https://ollama.com) server is running with `nomic-embed-text` pulled, the CLI and MCP server pick it up automatically (`OLLAMA_HOST` to override). Save and search use the same provider so vectors stay comparable.
-- Vectors are stored as blobs in the SQLite index; matching is a brute-force cosine scan. Fast at personal-store scale; swap in a vector extension (sqlite-vec / pgvector) when chunk counts get large.
+| Tier | Quality | Setup |
+|---|---|---|
+| **hash** (default) | keyword / lexical overlap — shared words, not meaning | none — offline, zero-dep |
+| **local model** | **true semantic** (`car` ≈ `automobile`) | `pnpm enable:semantic` — transformers.js all-MiniLM, runs in-process, downloads once |
+| **Ollama** | true semantic, GPU-capable | run [Ollama](https://ollama.com) with `nomic-embed-text` |
+
+> **Out of the box, search is keyword-based.** For paraphrase-aware semantic search, run `pnpm enable:semantic` once **or** point it at Ollama — both auto-detected, no code change. The base install stays lean (zero native ML deps) by design.
+
+The CLI/MCP/server entry points pick the best available (Ollama → local model → hash). Save and search use the **same** provider so vectors stay comparable; mismatched chunks are skipped with a reindex hint. Vectors are blobs in the SQLite index; matching is a brute-force cosine scan — fast at personal-store scale; swap in sqlite-vec / pgvector when chunk counts get large.
 
 ## On-disk shape
 
