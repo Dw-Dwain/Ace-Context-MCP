@@ -20,7 +20,7 @@ ace search "what did we decide about session tokens"
 - **Many topics, many slots.** Slugs are namespaced paths (`project/x`, `research/y`, `personal/z`). Re-saving a slug merges + dedups, so a slot grows across sessions instead of overwriting.
 - **Fits any window.** `load` returns the largest shape that fits `--budget`, so a 1M-token session and an 8k one both get a right-sized payload.
 
-**Status: M1–M5 shipped.** Save/load/list/forget on disk with a SQLite metadata index (M1). Semantic search across all saved contexts (M2). Automatic extraction of decisions/facts/snippets from raw threads (M3). MCP server so any chat client can call the store, plus `ace mcp install` for four clients (M4). LLM proxy pipeline — provider-agnostic routing with failover (M5). Cache, optimization, compression, security, and observability are the remaining milestones — see the [architecture plan](../../../.claude/plans/ai-context-engine-semantic-parsed-bee.md).
+**Status: v0.1.0 — M1–M14 complete.** The context store (save/load/search/extract, MCP + CLI + REST) and the full LLM proxy pipeline (routing, cache, optimizer, compression, security, policy, learning, observability). 120 tests across 15 packages. Everything works offline by default; heavier implementations sit behind stable interfaces. See [ARCHITECTURE.md](ARCHITECTURE.md), [docs/DESIGN-DECISIONS.md](docs/DESIGN-DECISIONS.md), [docs/PLUGINS.md](docs/PLUGINS.md), and [CHANGELOG.md](CHANGELOG.md).
 
 ## Try it now
 
@@ -110,14 +110,29 @@ pnpm serve          # builds @ace/server and starts it on http://127.0.0.1:4319
 
 ## Layout
 
-- `packages/core`       — engine + middleware kernel + types + tracing
-- `packages/store`      — on-disk context store (SQLite index, markdown content)
-- `packages/embeddings` — provider-agnostic embeddings (hash default, Ollama opt-in)
-- `packages/extract`    — thread → decisions / facts / snippets / summary
-- `packages/router`     — provider adapters (Anthropic, mock) + routing/failover
-- `packages/mcp`        — MCP server (`ace-mcp`) exposing the store as MCP tools
-- `packages/cli`        — the `ace` binary (save/load/search/list/forget/mcp install)
-- `demos/`              — per-milestone runnable demos
+| Package | Role |
+|---|---|
+| `@ace/core` | Engine + middleware kernel + types + tracing |
+| `@ace/store` | On-disk context store (SQLite index, markdown content) |
+| `@ace/embeddings` | Provider-agnostic embeddings (hash default, Ollama opt-in) |
+| `@ace/extract` | Thread → decisions / facts / snippets / summary |
+| `@ace/cache` | Exact + semantic cache with an explainable confidence engine |
+| `@ace/optimize` | Prompt optimizer with a rewrite safety rail |
+| `@ace/compress` | Budget-triggered conversation compression |
+| `@ace/router` | Provider adapters (Anthropic, OpenAI/OpenRouter/Ollama/Gemini, mock) + routing/failover/streaming |
+| `@ace/security` | Secret / PII / prompt-injection scanning + redaction |
+| `@ace/policy` | Allow/deny, rate-limit, token-budget enforcement |
+| `@ace/learn` | Feedback-signal quality scoring + cache-threshold tuning |
+| `@ace/observe` | Metrics, trace log, observability middleware |
+| `@ace/mcp` | MCP server (`ace-mcp`) exposing the store to any chat client |
+| `@ace/cli` | The `ace` binary (save/load/search/list/forget/mcp install) |
+| `apps/server` | Fastify REST server + live dashboard |
+
+`demos/` holds per-milestone runnable demos (`pnpm demo:m1` … `demo:m11`).
+
+## License
+
+Apache-2.0.
 
 ## LLM proxy pipeline (M5)
 
