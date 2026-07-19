@@ -2,6 +2,24 @@
 
 Persistent, local-first context store. Save context in one chat, load it in another. Works from any tool that can shell out to a CLI, hit a REST endpoint, or talk MCP.
 
+Leave a chat and it's gone — a fresh session anywhere starts blank. The only thing that survives is what you stored in ACE. That local copy is the source of truth the next session pulls back in, so each session ties into the last. Different topics live in different named slots. See [ARCHITECTURE.md](ARCHITECTURE.md) for the full model and [docs/DESIGN-DECISIONS.md](docs/DESIGN-DECISIONS.md) for the trade-offs.
+
+## Cross-session continuity (the whole point)
+
+```bash
+# End of a session in Claude Code — stash what mattered
+ace save project/auth-refactor --from-clipboard
+
+# Next day, fresh chat in Claude Desktop / Cursor / web — catch it up
+ace load project/auth-refactor --shape summary --budget 8000
+#   ...or, if you forget the slug:
+ace search "what did we decide about session tokens"
+```
+
+- **One brain across every tool.** Point every client at the same store by setting `ACE_HOME` (default `~/.ace/store`) identically — CLI, MCP server, and SDK all read it. Desktop, web, Cursor, Cline, and the terminal share the same slots.
+- **Many topics, many slots.** Slugs are namespaced paths (`project/x`, `research/y`, `personal/z`). Re-saving a slug merges + dedups, so a slot grows across sessions instead of overwriting.
+- **Fits any window.** `load` returns the largest shape that fits `--budget`, so a 1M-token session and an 8k one both get a right-sized payload.
+
 **Status: M1–M5 shipped.** Save/load/list/forget on disk with a SQLite metadata index (M1). Semantic search across all saved contexts (M2). Automatic extraction of decisions/facts/snippets from raw threads (M3). MCP server so any chat client can call the store, plus `ace mcp install` for four clients (M4). LLM proxy pipeline — provider-agnostic routing with failover (M5). Cache, optimization, compression, security, and observability are the remaining milestones — see the [architecture plan](../../../.claude/plans/ai-context-engine-semantic-parsed-bee.md).
 
 ## Try it now
