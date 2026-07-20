@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
-  "name": "io.github.dw-dwain/ace-context-mcp",
+  "name": "io.github.Dw-Dwain/ace-context-mcp",
   "description": "Local-first memory for AI chats: save context in one chat, load it in any other via MCP.",
   "version": "0.1.0",
   "repository": {
