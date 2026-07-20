@@ -1,6 +1,6 @@
 # AI Context Engine (ACE)
 
-[![CI](https://github.com/Dw-Dwain/Ace-Context-MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/Dw-Dwain/Ace-Context-MCP/actions/workflows/ci.yml) ![status](https://img.shields.io/badge/status-v0.1.0-blue) ![license](https://img.shields.io/badge/license-Apache--2.0-green) ![tests](https://img.shields.io/badge/tests-141%20passing-brightgreen) ![runtime](https://img.shields.io/badge/node-%3E%3D20-informational) ![MCP](https://img.shields.io/badge/MCP-ready-8A63D2)
+[![CI](https://github.com/Dw-Dwain/Ace-Context-MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/Dw-Dwain/Ace-Context-MCP/actions/workflows/ci.yml) [![Glama score](https://glama.ai/mcp/servers/Dw-Dwain/Ace-Context-MCP/badges/score.svg)](https://glama.ai/mcp/servers/Dw-Dwain/Ace-Context-MCP) ![status](https://img.shields.io/badge/status-v0.1.0-blue) ![license](https://img.shields.io/badge/license-Apache--2.0-green) ![tests](https://img.shields.io/badge/tests-145%20passing-brightgreen) ![runtime](https://img.shields.io/badge/node-%3E%3D20-informational) ![MCP](https://img.shields.io/badge/MCP-ready-8A63D2)
 
 **Persistent, local-first memory for your AI chats.** Save context in one chat, load it in another — across Claude web, Claude Code, Cursor, Cline, and Claude Desktop. One store, on your own disk, reachable from every tool via MCP, CLI, REST, or SDK.
 
