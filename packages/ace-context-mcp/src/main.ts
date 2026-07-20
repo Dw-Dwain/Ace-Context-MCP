@@ -12,7 +12,7 @@ const store = process.env.ACE_HOME
   ? new Store({ home: process.env.ACE_HOME, embeddings })
   : new Store({ embeddings });
 
-const server = createAceServer({ store });
+const server = createAceServer({ store, version: '0.1.1' });
 const transport = new StdioServerTransport();
 
 process.on('SIGINT', () => shutdown(0));
