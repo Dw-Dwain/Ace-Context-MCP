@@ -16,3 +16,8 @@ Thumbs.db
 .ace/
 .ace-*/
 ace-store/
+
+# MCP registry publisher binary (downloaded locally, never commit)
+mcp-publisher
+mcp-publisher.exe
+mcp-publisher*.tar.gz
