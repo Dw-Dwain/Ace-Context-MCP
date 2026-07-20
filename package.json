@@ -5,6 +5,7 @@
   "type": "module",
   "description": "AI Context Engine — persistent local-first context store any chat can save into and any other can load from.",
   "license": "Apache-2.0",
+  "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=20"
   },

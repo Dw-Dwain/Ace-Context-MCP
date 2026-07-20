@@ -24,12 +24,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # pnpm 10 supports Node 18+ (pnpm 11 requires Node >=22.13 via node:sqlite,
-      # which would break the Node 20 matrix leg).
+      # Version comes from package.json "packageManager" (pnpm@10.34.5). pnpm 10
+      # supports Node 18+ (pnpm 11 needs Node >=22.13 via node:sqlite, which
+      # would break the Node 20 legs) and matches the committed lockfile.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Setup Node ${{ matrix.node }}
         uses: actions/setup-node@v4
