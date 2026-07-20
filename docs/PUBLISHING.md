@@ -1,40 +1,43 @@
-# Publishing to the MCP Registry
+# Publishing to npm + the MCP Registry
 
-The [MCP Registry](https://registry.modelcontextprotocol.io) is how MCP clients auto-discover servers. Listing ACE there is the highest-signal way to be found (Anthropic maintains it).
+Listing ACE in the [MCP Registry](https://registry.modelcontextprotocol.io) is the highest-signal discovery channel (clients auto-find it; Anthropic maintains it). The registry entry points at an npm package, so publish that first.
 
-The registry entry (`server.json`, at the repo root) points at an **npm package**, so the one prerequisite is publishing the MCP server to npm.
+The publishable package is **`packages/ace-context-mcp`** — a single self-contained bundle (all `@ace/*` code inlined by tsup; only `better-sqlite3` and `@modelcontextprotocol/sdk` stay as runtime deps). Verified working standalone over stdio.
 
-## 1. Publish `@ace/mcp` to npm (under a scope/name you own)
+## 1. Publish to npm
 
-`@ace/*` is a workspace alias, not a claimed npm scope. Publish the MCP server under a name you own — e.g. the unscoped `ace-context-mcp` (matches `server.json`) or your own scope. From the repo:
+Requires an npmjs.org login (your account). From the repo root:
 
 ```bash
-pnpm -r build
+pnpm install
+pnpm --filter ace-context-mcp build     # produces dist/main.js (also runs on prepublishOnly)
 
-# rename packages/mcp "name" to "ace-context-mcp" (or your scope) + add a
-# "bin" already present, then:
-cd packages/mcp
-npm publish --access public
+cd packages/ace-context-mcp
+npm login                                # or: pnpm login
+pnpm publish --access public             # use pnpm (rewrites workspace: build-deps; npm can't)
 ```
 
-> Note: `@ace/mcp` depends on other `@ace/*` workspace packages via `workspace:*`. To publish standalone you must either (a) publish all `@ace/*` packages under names you own, or (b) bundle them (e.g. `tsup`/`ncc`) so the published `ace-context-mcp` has no unpublished workspace deps. Bundling is the simpler path for a single installable binary.
+Dry run first if you like: `pnpm publish --dry-run --no-git-checks`.
 
-## 2. Install the registry publisher
+Once live, anyone can run it with zero build step:
+
+```json
+{ "mcpServers": { "ace": { "command": "npx", "args": ["-y", "ace-context-mcp"] } } }
+```
+
+## 2. Publish the registry entry
+
+`server.json` (repo root) already targets `ace-context-mcp`. Install the publisher and push it:
 
 ```bash
-# official MCP registry CLI
 npm i -g @modelcontextprotocol/publisher   # or: brew install mcp-publisher
+mcp-publisher login github                 # authorizes the io.github.dw-dwain/* namespace
+mcp-publisher publish                       # reads ./server.json
 ```
 
-## 3. Authenticate + publish
+The `io.github.dw-dwain/*` namespace is granted automatically when you auth with the GitHub account that owns this repo.
 
-```bash
-mcp-publisher login github          # authorizes the io.github.dw-dwain/* namespace
-mcp-publisher publish               # reads ./server.json
-```
+## Notes
 
-The `io.github.dw-dwain/*` namespace is granted automatically once you auth with the GitHub account that owns this repo.
-
-## Until then
-
-The repo is already installable from source (`git clone` + `pnpm build` + `ace mcp install`), and listed in community indexes (awesome-mcp-servers). The registry entry activates the moment the npm package is live.
+- Bump `version` in both `packages/ace-context-mcp/package.json` and `server.json` together on each release.
+- The `ace-context-mcp` bundle is independent of the workspace `@ace/*` package names, so you never need to claim an `@ace` npm scope.
