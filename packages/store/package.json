@@ -27,7 +27,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.5"
+    "vitest": "^3.2.6"
   },
   "license": "Apache-2.0",
   "description": "Local-first context store: save/load/search across chats",

@@ -25,7 +25,7 @@
   "devDependencies": {
     "@types/node": "^22.9.0",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.5"
+    "vitest": "^3.2.6"
   },
   "license": "Apache-2.0",
   "description": "Prompt optimization with a rewrite safety rail",

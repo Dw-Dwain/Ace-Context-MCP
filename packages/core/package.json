@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "typescript": "^5.7.2",
-    "vitest": "^2.1.5"
+    "vitest": "^3.2.6"
   },
   "license": "Apache-2.0",
   "description": "Middleware kernel, engine, and tracing for the AI Context Engine",
