@@ -6,6 +6,8 @@
 
 > Leave a chat and it's gone. A fresh session anywhere starts blank. The only thing that survives is what you saved to ACE — and that local copy is the source of truth the next session pulls back in. Each session ties into the last.
 
+![ACE — save context in one chat, load it in any other](docs/demo.svg)
+
 ## Install
 
 ```bash

@@ -1,0 +1,47 @@
+<svg width="760" height="440" viewBox="0 0 760 440" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">
+  <defs>
+    <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12151d"/><stop offset="1" stop-color="#0d1017"/>
+    </linearGradient>
+    <style>
+      .l { opacity: 1; animation: rise 16s infinite; }
+      @keyframes rise { 0% {opacity:0} 2% {opacity:1} 92% {opacity:1} 100% {opacity:0} }
+      .d0{animation-delay:0s}.d1{animation-delay:.7s}.d2{animation-delay:1.2s}
+      .d3{animation-delay:2.4s}.d4{animation-delay:2.9s}.d5{animation-delay:3.4s}.d6{animation-delay:3.9s}.d7{animation-delay:4.4s}
+      .d8{animation-delay:5.6s}.d9{animation-delay:6.1s}.d10{animation-delay:6.6s}.d11{animation-delay:7.1s}
+      .cur { animation: blink 1s steps(1) infinite; }
+      @keyframes blink { 50% { opacity: 0 } }
+      .prompt{fill:#6ea8fe;font-weight:700}.cmd{fill:#e6e9ef}.out{fill:#8b93a7}.ok{fill:#7fe3a4}.acc{fill:#b79bff}
+    </style>
+  </defs>
+
+  <rect width="760" height="440" rx="12" fill="url(#scr)" stroke="#232a38"/>
+  <!-- title bar -->
+  <g>
+    <circle cx="24" cy="24" r="6" fill="#ff5f57"/><circle cx="44" cy="24" r="6" fill="#febc2e"/><circle cx="64" cy="24" r="6" fill="#28c840"/>
+    <text x="380" y="28" text-anchor="middle" font-size="12" fill="#5b6472">ace — persistent memory for your AI chats</text>
+  </g>
+  <line x1="0" y1="48" x2="760" y2="48" stroke="#232a38"/>
+
+  <g font-size="14.5">
+    <!-- save -->
+    <text x="24" y="86" class="l d0"><tspan class="prompt">$ </tspan><tspan class="cmd">ace save project/auth-refactor --from-clipboard</tspan></text>
+    <text x="24" y="110" class="l d1"><tspan class="out">embeddings: </tspan><tspan class="acc">local:all-MiniLM-L6-v2</tspan></text>
+    <text x="24" y="132" class="l d2"><tspan class="ok">saved project/auth-refactor v1</tspan><tspan class="out"> · tokens 63/63/126</tspan></text>
+
+    <!-- load -->
+    <text x="24" y="176" class="l d3"><tspan class="prompt">$ </tspan><tspan class="cmd">ace load project/auth-refactor --shape summary</tspan></text>
+    <text x="24" y="198" class="l d4"><tspan class="out"># project/auth-refactor</tspan></text>
+    <text x="24" y="218" class="l d5"><tspan class="out">## Decisions</tspan></text>
+    <text x="24" y="238" class="l d6"><tspan class="cmd">- JWT: 15-min access, refresh rotates on use</tspan></text>
+    <text x="24" y="258" class="l d7"><tspan class="cmd">- Deny-list refresh tokens on logout, cleaned nightly</tspan></text>
+
+    <!-- search -->
+    <text x="24" y="302" class="l d8"><tspan class="prompt">$ </tspan><tspan class="cmd">ace search "what did we decide about tokens"</tspan></text>
+    <text x="24" y="326" class="l d9"><tspan class="acc">0.87</tspan><tspan class="out">  project/auth-refactor#decisions</tspan></text>
+    <text x="24" y="346" class="l d10"><tspan class="out">      JWT: 15-min access, refresh rotates on use…</tspan></text>
+
+    <!-- tagline -->
+    <text x="24" y="392" class="l d11"><tspan class="out"># one store. every chat. </tspan><tspan class="ok">Claude · Code · Cursor · Cline</tspan><tspan class="prompt cur"> ▋</tspan></text>
+  </g>
+</svg>
