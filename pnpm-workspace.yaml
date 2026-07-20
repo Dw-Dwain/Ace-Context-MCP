@@ -1,9 +1,9 @@
 packages:
   - 'packages/*'
   - 'apps/*'
-# Valid pnpm key for approving package build scripts. better-sqlite3 and esbuild
-# ship prebuilt binaries so this is belt-and-suspenders; onnxruntime/sharp only
-# apply when the optional semantic embedder (@huggingface/transformers) is added.
+# Approve packages whose install scripts we allow to run (all ship prebuilt
+# binaries, so this is belt-and-suspenders). onnxruntime/sharp only apply when
+# the optional semantic embedder (@huggingface/transformers) is installed.
 onlyBuiltDependencies:
   - better-sqlite3
   - esbuild
