@@ -10,6 +10,22 @@
 
 ## Install
 
+### Fastest — no clone, no build ([npm](https://www.npmjs.com/package/ace-context-mcp))
+
+Add to your MCP client config (Claude Desktop, Cursor, Cline, …):
+
+```json
+{
+  "mcpServers": {
+    "ace": { "command": "npx", "args": ["-y", "ace-context-mcp"] }
+  }
+}
+```
+
+Restart the client. `context_save` / `context_load` / `context_search` / `context_list` / `context_forget` are now available. Set `ACE_HOME` to change the store location (default `~/.ace/store`).
+
+### From source (also gives you the `ace` CLI + one-command install)
+
 ```bash
 git clone https://github.com/Dw-Dwain/Ace-Context-MCP.git
 cd Ace-Context-MCP
