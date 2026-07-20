@@ -7,8 +7,9 @@ FROM node:20-slim AS build
 WORKDIR /src
 RUN corepack enable
 COPY . .
+# Build the @ace/* graph (their dist) before tsup bundles ace-context-mcp.
 RUN pnpm install --frozen-lockfile \
- && pnpm --filter ace-context-mcp build
+ && pnpm --filter "ace-context-mcp..." run build
 
 # --- slim runtime -------------------------------------------------------------
 FROM node:20-slim
